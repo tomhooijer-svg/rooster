@@ -1,0 +1,768 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>Rooster Tom</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Weekrooster van Tom — dinsdag, donderdag, vrijdag.">
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4f46e5">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Rooster">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+
+<style>
+  :root{
+    --bg:#f4f5f9;
+    --card:#ffffff;
+    --ink:#15161c;
+    --ink-soft:#5c6072;
+    --ink-faint:#8c91a3;
+    --line:#e3e5ee;
+    --accent:#4f46e5;
+    --accent-soft:#eceafd;
+    --nu:#e8442b;
+    --shadow:0 1px 2px rgba(20,22,40,.06), 0 6px 18px rgba(20,22,40,.06);
+    --radius:16px;
+    --safe-top:env(safe-area-inset-top,0px);
+    --safe-bottom:env(safe-area-inset-bottom,0px);
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#101119;
+      --card:#1a1c26;
+      --ink:#f2f3f8;
+      --ink-soft:#a8adc0;
+      --ink-faint:#767b8e;
+      --line:#2a2d3a;
+      --accent:#8b83ff;
+      --accent-soft:#272449;
+      --nu:#ff6b52;
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 6px 18px rgba(0,0,0,.25);
+    }
+  }
+
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  html,body{margin:0; padding:0}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font:400 17px/1.4 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+    -webkit-font-smoothing:antialiased;
+    overscroll-behavior-y:none;
+  }
+  button, input, textarea, select{font:inherit; color:inherit}
+
+  /* ---------- header ---------- */
+  header{
+    position:sticky; top:0; z-index:30;
+    padding:calc(var(--safe-top) + 10px) 16px 0;
+    background:color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter:saturate(180%) blur(14px);
+    -webkit-backdrop-filter:saturate(180%) blur(14px);
+    border-bottom:1px solid var(--line);
+  }
+  .titelrij{display:flex; align-items:center; gap:10px}
+  h1{font-size:22px; font-weight:700; letter-spacing:-.02em; margin:0; flex:1}
+  h1 small{display:block; font-size:13px; font-weight:500; color:var(--ink-faint); letter-spacing:0}
+  .icoonknop{
+    width:38px; height:38px; flex:none; border:0; border-radius:12px;
+    background:var(--card); box-shadow:var(--shadow); font-size:18px;
+    display:grid; place-items:center; cursor:pointer;
+  }
+  .icoonknop:active{transform:scale(.94)}
+
+  nav{display:flex; gap:6px; padding:12px 0 10px}
+  nav button{
+    flex:1; border:0; border-radius:12px; padding:10px 4px;
+    background:transparent; color:var(--ink-soft); font-weight:600; font-size:16px;
+    cursor:pointer; transition:background .15s, color .15s;
+  }
+  nav button .punt{
+    display:inline-block; width:6px; height:6px; border-radius:50%;
+    background:var(--nu); margin-left:5px; vertical-align:2px;
+  }
+  nav button[aria-selected="true"]{background:var(--accent); color:#fff}
+  nav button[aria-selected="true"] .punt{background:#fff}
+
+  /* ---------- status ---------- */
+  .status{
+    margin:14px 16px 0; padding:12px 14px; border-radius:var(--radius);
+    background:var(--card); box-shadow:var(--shadow);
+    border-left:4px solid var(--nu);
+    display:none;
+  }
+  .status.zichtbaar{display:block}
+  .status .label{font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--nu)}
+  .status .wat{font-weight:600; margin-top:2px}
+  .status .sub{font-size:14px; color:var(--ink-soft)}
+  .status.rust{border-left-color:var(--accent)}
+  .status.rust .label{color:var(--accent)}
+
+  /* ---------- lijst ---------- */
+  main{padding:14px 16px calc(120px + var(--safe-bottom)); max-width:640px; margin:0 auto}
+  .blok{
+    display:flex; gap:12px; width:100%; text-align:left;
+    background:var(--card); border:0; border-left:4px solid var(--soort,var(--line));
+    border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:13px 14px; margin-bottom:9px; cursor:pointer;
+    transition:transform .12s, opacity .2s;
+  }
+  .blok:active{transform:scale(.985)}
+  .blok .tijd{
+    flex:none; width:62px; font-variant-numeric:tabular-nums;
+    font-weight:700; font-size:16px; letter-spacing:-.02em; line-height:1.25;
+  }
+  .blok .tijd span{display:block; font-weight:500; font-size:14px; color:var(--ink-faint)}
+  .blok .wie{font-weight:600; line-height:1.3; overflow-wrap:anywhere}
+  .blok .body{flex:1; min-width:0}
+  .tag{
+    display:inline-block; margin-top:6px; padding:3px 9px; border-radius:999px;
+    font-size:13px; font-weight:600;
+    background:var(--soort-zacht,var(--accent-soft)); color:var(--soort,var(--accent));
+  }
+  .notitie{
+    margin-top:8px; padding:8px 10px; border-radius:10px;
+    background:var(--accent-soft); color:var(--ink);
+    font-size:14.5px; line-height:1.35; white-space:pre-wrap; overflow-wrap:anywhere;
+  }
+  .blok.voorbij{opacity:.42}
+  .blok.nu{
+    border-left-color:var(--nu); border-left-width:5px;
+    box-shadow:0 0 0 2px var(--nu), var(--shadow);
+  }
+  .nu-badge{
+    float:right; margin-left:8px; background:var(--nu); color:#fff;
+    font-size:11px; font-weight:800; letter-spacing:.08em;
+    padding:3px 7px; border-radius:6px;
+  }
+  .nulijn{display:flex; align-items:center; gap:8px; margin:2px 0 11px}
+  .nulijn::after{content:""; flex:1; height:2px; border-radius:2px; background:var(--nu)}
+  .nulijn span{
+    font-size:11.5px; font-weight:800; color:#fff; background:var(--nu);
+    padding:2px 7px; border-radius:999px; font-variant-numeric:tabular-nums;
+  }
+  .leeg{text-align:center; color:var(--ink-faint); padding:40px 10px}
+
+  .toevoegen{
+    width:100%; margin-top:6px; padding:14px; border-radius:var(--radius);
+    border:1.5px dashed var(--line); background:transparent; color:var(--ink-soft);
+    font-weight:600; cursor:pointer;
+  }
+  .toevoegen:active{background:var(--card)}
+
+  /* ---------- sheet ---------- */
+  .overlay{
+    position:fixed; inset:0; z-index:50; background:rgba(10,11,20,.42);
+    opacity:0; pointer-events:none; transition:opacity .22s;
+    -webkit-backdrop-filter:blur(2px); backdrop-filter:blur(2px);
+  }
+  .overlay.open{opacity:1; pointer-events:auto}
+  .sheet{
+    position:fixed; left:0; right:0; bottom:0; z-index:51;
+    background:var(--bg); border-radius:22px 22px 0 0;
+    padding:8px 18px calc(20px + var(--safe-bottom));
+    max-height:88vh; overflow-y:auto; -webkit-overflow-scrolling:touch;
+    transform:translateY(102%); transition:transform .28s cubic-bezier(.32,.72,0,1);
+    box-shadow:0 -8px 40px rgba(0,0,0,.25);
+    max-width:640px; margin:0 auto;
+  }
+  .sheet.open{transform:translateY(0)}
+  .greep{width:38px; height:5px; border-radius:3px; background:var(--line); margin:0 auto 14px}
+  .sheet h2{font-size:20px; margin:0 0 2px; letter-spacing:-.02em}
+  .sheet .subkop{color:var(--ink-soft); font-size:14.5px; margin-bottom:16px}
+  label{display:block; font-size:13px; font-weight:700; text-transform:uppercase;
+        letter-spacing:.06em; color:var(--ink-faint); margin:0 0 6px}
+  .veld{margin-bottom:14px}
+  input[type=text], input[type=time], textarea{
+    width:100%; padding:12px 13px; border-radius:12px; font-size:17px;
+    border:1.5px solid var(--line); background:var(--card); color:var(--ink);
+    -webkit-appearance:none; appearance:none;
+  }
+  input:focus, textarea:focus{outline:none; border-color:var(--accent)}
+  textarea{min-height:96px; resize:vertical; line-height:1.4}
+  .tijdrij{display:flex; gap:10px}
+  .tijdrij .veld{flex:1}
+  details.bewerk{margin:4px 0 6px; border-top:1px solid var(--line); padding-top:14px}
+  details.bewerk summary{
+    font-weight:600; color:var(--accent); cursor:pointer; list-style:none;
+    padding:4px 0; user-select:none;
+  }
+  details.bewerk summary::-webkit-details-marker{display:none}
+  details.bewerk summary::before{content:"⚙︎ "; }
+  details.bewerk[open] summary{margin-bottom:14px}
+  .knoppen{display:flex; gap:10px; margin-top:6px}
+  .knop{
+    flex:1; padding:15px; border-radius:14px; border:0; font-size:17px; font-weight:600;
+    background:var(--card); color:var(--ink); box-shadow:var(--shadow); cursor:pointer;
+  }
+  .knop:active{transform:scale(.98)}
+  .knop.primair{background:var(--accent); color:#fff}
+  .knop.gevaar{background:transparent; box-shadow:none; color:#d9412a; font-weight:600}
+  @media (prefers-color-scheme:dark){ .knop.gevaar{color:#ff7a63} }
+  .menuknop{
+    display:block; width:100%; text-align:left; padding:15px 14px; margin-bottom:9px;
+    border:0; border-radius:14px; background:var(--card); box-shadow:var(--shadow);
+    font-size:17px; cursor:pointer;
+  }
+  .menuknop small{display:block; color:var(--ink-faint); font-size:13.5px; font-weight:400}
+  .voet{margin-top:16px; text-align:center; font-size:12.5px; color:var(--ink-faint)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="titelrij">
+    <h1>Rooster Tom<small id="datumregel">—</small></h1>
+    <button class="icoonknop" id="menuKnop" aria-label="Instellingen">⚙︎</button>
+  </div>
+  <nav id="tabs" role="tablist"></nav>
+</header>
+
+<div class="status" id="status" aria-live="polite"></div>
+<main id="lijst"></main>
+
+<div class="overlay" id="overlay"></div>
+
+<!-- blok-sheet -->
+<section class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitel">
+  <div class="greep"></div>
+  <h2 id="sheetTitel">Blok</h2>
+  <div class="subkop" id="sheetSub"></div>
+
+  <div class="veld">
+    <label for="notitie">Notitie</label>
+    <textarea id="notitie" placeholder="Bijv. Jaap-Jan ziek, i.p.v. hem Mees" enterkeyhint="done"></textarea>
+  </div>
+
+  <details class="bewerk" id="bewerkVak">
+    <summary>Blok bewerken</summary>
+    <div class="tijdrij">
+      <div class="veld"><label for="vanTijd">Van</label><input type="time" id="vanTijd"></div>
+      <div class="veld"><label for="totTijd">Tot</label><input type="time" id="totTijd"></div>
+    </div>
+    <div class="veld"><label for="wieWaar">Wie &amp; waar</label><input type="text" id="wieWaar" placeholder="Bijv. Moos en Yula 2C"></div>
+    <div class="veld"><label for="wat">Wat</label><input type="text" id="wat" placeholder="Bijv. Taalklas" list="soorten">
+      <datalist id="soorten"></datalist>
+    </div>
+    <button class="knop gevaar" id="verwijderKnop">Dit blok verwijderen</button>
+  </details>
+
+  <div class="knoppen">
+    <button class="knop" id="annuleerKnop">Sluiten</button>
+    <button class="knop primair" id="opslaanKnop">Opslaan</button>
+  </div>
+</section>
+
+<!-- menu-sheet -->
+<section class="sheet" id="menuSheet" role="dialog" aria-modal="true" aria-label="Instellingen">
+  <div class="greep"></div>
+  <h2>Instellingen</h2>
+  <div class="subkop" id="menuStatus"></div>
+  <button class="menuknop" id="resetRooster">Rooster terugzetten naar origineel<small>Alle wijzigingen in tijden, namen en activiteiten worden ongedaan gemaakt. Notities blijven staan.</small></button>
+  <button class="menuknop" id="wisNotities">Alle notities wissen<small>Verwijdert de notities bij alle blokken.</small></button>
+  <div class="knoppen"><button class="knop" id="menuSluit">Sluiten</button></div>
+  <div class="voet">Rooster Tom · werkt offline</div>
+</section>
+
+<script>
+/* =========================================================
+   1. ROOSTERDATA — hier pas je het basisrooster aan
+   ========================================================= */
+const BASIS_ROOSTER = {
+  dinsdag: [
+    { tijd: "8.30 - 9.00",   wieWaar: "Jaap-Jan 8Y",                        wat: "EL Rekenen" },
+    { tijd: "9.00 - 9.30",   wieWaar: "Maxima en Luca (groep 5 en 6)",      wat: "EL Rekenen" },
+    { tijd: "9.30 - 10.00",  wieWaar: "Moos en Yula 2C",                    wat: "Zittenblijvers" },
+    { tijd: "10.00 - 10.30", wieWaar: "Voorbereiding verbreding groep 1",   wat: "" },
+    { tijd: "10.30 - 11.00", wieWaar: "Verbreding groep 1",                 wat: "" },
+    { tijd: "11.00 - 11.40", wieWaar: "Verbreding groep 1",                 wat: "" },
+    { tijd: "11.40 - 12.00", wieWaar: "Yahya 1C",                           wat: "Taalklas" },
+    { tijd: "12.00 - 12.30", wieWaar: "Eten in groep 2C",                   wat: "" },
+    { tijd: "12.30 - 13.00", wieWaar: "Pauze",                              wat: "" },
+    { tijd: "13.00 - 13.30", wieWaar: "Evi en Esmay 2B",                    wat: "Zittenblijvers" },
+    { tijd: "13.30 - 14.00", wieWaar: "Gabriel & Zakariya 2C",              wat: "Taalklas" },
+    { tijd: "14.00 - 14.10", wieWaar: "Liam 1A",                            wat: "VVE" }
+  ],
+  donderdag: [
+    { tijd: "8.30 - 9.15",   wieWaar: "Charlie en Mark (8Y en 7A)",         wat: "EL Rekenen" },
+    { tijd: "9.15 - 9.30",   wieWaar: "Voorbereiding verbreding groep 2",   wat: "" },
+    { tijd: "9.30 - 10.00",  wieWaar: "Voorbereiding verbreding groep 2",   wat: "" },
+    { tijd: "10.00 - 10.30", wieWaar: "Verbreding groep 2",                 wat: "" },
+    { tijd: "10.30 - 11.00", wieWaar: "Verbreding groep 2",                 wat: "Taalklas" },
+    { tijd: "11.00 - 11.15", wieWaar: "Mia 1B",                             wat: "VVE" },
+    { tijd: "11.15 - 11.30", wieWaar: "Mimi 1C",                            wat: "VVE" },
+    { tijd: "11.30 - 12.00", wieWaar: "Daan 2C",                            wat: "Extra ondersteuning" },
+    { tijd: "12.00 - 12.30", wieWaar: "Eten met 2C",                        wat: "" },
+    { tijd: "12.30 - 13.00", wieWaar: "Pauze",                              wat: "" },
+    { tijd: "13.00 - 13.30", wieWaar: "Amalia en Johan (2A en 2C)",         wat: "Taalklas" },
+    { tijd: "13.30 - 14.00", wieWaar: "Evi en Esmay (2B)",                  wat: "VVE" },
+    { tijd: "14.00 - 14.30", wieWaar: "Viv en Maura (2A en 2B)",            wat: "VVE" }
+  ],
+  vrijdag: [
+    { tijd: "12.00 - 12.30", wieWaar: "Pleinwacht",                         wat: "" },
+    { tijd: "12.30 - 13.00", wieWaar: "Pauze",                              wat: "" },
+    { tijd: "13.00 - 13.30", wieWaar: "?",                                  wat: "" },
+    { tijd: "13.30 - 14.00", wieWaar: "?",                                  wat: "" },
+    { tijd: "14.00 - 14.30", wieWaar: "?",                                  wat: "" }
+  ]
+};
+
+const DAGEN = [
+  { sleutel: "dinsdag",   kort: "Di", jsDag: 2 },
+  { sleutel: "donderdag", kort: "Do", jsDag: 4 },
+  { sleutel: "vrijdag",   kort: "Vr", jsDag: 5 }
+];
+
+/* kleur per soort activiteit: [kleur, zachte achtergrond licht, zachte achtergrond donker] */
+const SOORTEN = {
+  "EL Rekenen":          ["#2f7d63", "#dff1ea", "#12332a"],
+  "Zittenblijvers":      ["#a1622c", "#fbeadb", "#3a2413"],
+  "Taalklas":            ["#2e5fb5", "#dfe9fb", "#152a4c"],
+  "VVE":                 ["#8b4bad", "#f0e4f7", "#2e1a38"],
+  "Extra ondersteuning": ["#b13f5c", "#fbe1e8", "#3a1620"]
+};
+const RUST = ["Pauze", "Eten"];
+
+/* =========================================================
+   2. OPSLAG
+   ========================================================= */
+const SLEUTEL_ROOSTER = "roosterTom.rooster.v1";
+const SLEUTEL_NOTITIES = "roosterTom.notities.v1";
+
+function lees(sleutel, standaard) {
+  try {
+    const ruw = localStorage.getItem(sleutel);
+    return ruw ? JSON.parse(ruw) : standaard;
+  } catch (e) { return standaard; }
+}
+function schrijf(sleutel, waarde) {
+  try { localStorage.setItem(sleutel, JSON.stringify(waarde)); }
+  catch (e) { /* privémodus of vol: app blijft gewoon werken */ }
+}
+
+function maakBasis() {
+  const uit = {};
+  for (const d of DAGEN) {
+    uit[d.sleutel] = BASIS_ROOSTER[d.sleutel].map((b, i) => ({
+      id: d.kort.toLowerCase() + "-" + i, tijd: b.tijd, wieWaar: b.wieWaar, wat: b.wat
+    }));
+  }
+  return uit;
+}
+
+let rooster = lees(SLEUTEL_ROOSTER, null) || maakBasis();
+let notities = lees(SLEUTEL_NOTITIES, {}) || {};
+/* vangnet tegen kapotte opslag */
+if (!rooster || !DAGEN.every(d => Array.isArray(rooster[d.sleutel]))) rooster = maakBasis();
+
+const isAangepast = () => localStorage.getItem(SLEUTEL_ROOSTER) !== null;
+function bewaarRooster() { schrijf(SLEUTEL_ROOSTER, rooster); }
+function bewaarNotities() { schrijf(SLEUTEL_NOTITIES, notities); }
+
+/* =========================================================
+   3. TIJD-HULPJES
+   ========================================================= */
+function ontleedTijd(tekst) {
+  const m = String(tekst || "").match(/(\d{1,2})[.:](\d{2})\s*[-–—tot ]+\s*(\d{1,2})[.:](\d{2})/);
+  if (!m) return { start: null, eind: null };
+  return { start: +m[1] * 60 + +m[2], eind: +m[3] * 60 + +m[4] };
+}
+const toonTijd = min => min == null ? "" : Math.floor(min / 60) + "." + String(min % 60).padStart(2, "0");
+const naarInput = min => min == null ? "" : String(Math.floor(min / 60)).padStart(2, "0") + ":" + String(min % 60).padStart(2, "0");
+function vanInput(waarde) {
+  const m = String(waarde || "").match(/^(\d{1,2}):(\d{2})$/);
+  return m ? +m[1] * 60 + +m[2] : null;
+}
+const nuMinuten = () => { const n = new Date(); return n.getHours() * 60 + n.getMinutes(); };
+
+function huidigeDagSleutel() {
+  const vandaag = new Date().getDay();
+  const dag = DAGEN.find(d => d.jsDag === vandaag);
+  return dag ? dag.sleutel : null;
+}
+function eerstvolgendeDag() {
+  const vandaag = new Date().getDay();
+  for (let stap = 0; stap < 7; stap++) {
+    const dag = DAGEN.find(d => d.jsDag === (vandaag + stap) % 7);
+    if (dag) return dag.sleutel;
+  }
+  return DAGEN[0].sleutel;
+}
+
+function soortKleur(wat) {
+  const s = SOORTEN[wat];
+  if (!s) return null;
+  const donker = window.matchMedia("(prefers-color-scheme: dark)").matches;
+  return { kleur: s[0], zacht: donker ? s[2] : s[1] };
+}
+
+/* =========================================================
+   4. WEERGAVE
+   ========================================================= */
+const elLijst = document.getElementById("lijst");
+const elTabs = document.getElementById("tabs");
+const elStatus = document.getElementById("status");
+const elDatum = document.getElementById("datumregel");
+
+let actieveDag = huidigeDagSleutel() || eerstvolgendeDag();
+let eersteKeer = true;
+
+function sorteer(lijst) {
+  return lijst.slice().sort((a, b) => {
+    const sa = ontleedTijd(a.tijd).start, sb = ontleedTijd(b.tijd).start;
+    if (sa == null) return 1;
+    if (sb == null) return -1;
+    return sa - sb;
+  });
+}
+
+function tekenTabs() {
+  const vandaag = huidigeDagSleutel();
+  elTabs.innerHTML = "";
+  for (const d of DAGEN) {
+    const knop = document.createElement("button");
+    knop.type = "button";
+    knop.setAttribute("role", "tab");
+    knop.setAttribute("aria-selected", d.sleutel === actieveDag);
+    knop.innerHTML = d.kort + (d.sleutel === vandaag ? '<span class="punt"></span>' : "");
+    knop.onclick = () => { actieveDag = d.sleutel; eersteKeer = false; teken(); };
+    elTabs.appendChild(knop);
+  }
+}
+
+function tekenDatum() {
+  const nu = new Date();
+  const datum = nu.toLocaleDateString("nl-NL", { weekday: "long", day: "numeric", month: "long" });
+  const vandaag = huidigeDagSleutel();
+  const tekst = datum.charAt(0).toUpperCase() + datum.slice(1);
+  elDatum.textContent = actieveDag === vandaag
+    ? tekst
+    : tekst + " · je bekijkt " + actieveDag;
+}
+
+function tekenStatus() {
+  const vandaag = huidigeDagSleutel();
+  if (actieveDag !== vandaag) { elStatus.className = "status"; return; }
+  const blokken = sorteer(rooster[actieveDag]);
+  const nu = nuMinuten();
+  const huidig = blokken.find(b => { const t = ontleedTijd(b.tijd); return t.start != null && nu >= t.start && nu < t.eind; });
+  const volgend = blokken.find(b => { const t = ontleedTijd(b.tijd); return t.start != null && t.start > nu; });
+
+  let label, wat, sub;
+  if (huidig) {
+    const t = ontleedTijd(huidig.tijd);
+    label = "Nu bezig";
+    wat = huidig.wieWaar;
+    sub = (huidig.wat ? huidig.wat + " · " : "") + "nog " + (t.eind - nu) + " min" +
+          (volgend ? " · daarna " + volgend.wieWaar : "");
+  } else if (volgend) {
+    const t = ontleedTijd(volgend.tijd);
+    label = "Straks";
+    wat = volgend.wieWaar;
+    sub = (volgend.wat ? volgend.wat + " · " : "") + "om " + toonTijd(t.start) + " (over " + (t.start - nu) + " min)";
+  } else {
+    label = "Klaar";
+    wat = "Geen blokken meer vandaag";
+    sub = "Fijne avond!";
+  }
+  elStatus.className = "status zichtbaar" + (huidig ? "" : " rust");
+  elStatus.innerHTML = '<div class="label"></div><div class="wat"></div><div class="sub"></div>';
+  elStatus.querySelector(".label").textContent = label;
+  elStatus.querySelector(".wat").textContent = wat;
+  elStatus.querySelector(".sub").textContent = sub;
+}
+
+function teken() {
+  tekenTabs();
+  tekenDatum();
+  tekenStatus();
+
+  const blokken = sorteer(rooster[actieveDag]);
+  const isVandaag = actieveDag === huidigeDagSleutel();
+  const nu = nuMinuten();
+  elLijst.innerHTML = "";
+
+  if (!blokken.length) {
+    const leeg = document.createElement("p");
+    leeg.className = "leeg";
+    leeg.textContent = "Nog geen blokken op deze dag.";
+    elLijst.appendChild(leeg);
+  }
+
+  let lijnGezet = false;
+  let nuElement = null;
+
+  for (const blok of blokken) {
+    const t = ontleedTijd(blok.tijd);
+    const bezig = isVandaag && t.start != null && nu >= t.start && nu < t.eind;
+    const voorbij = isVandaag && t.eind != null && nu >= t.eind;
+
+    if (isVandaag && !lijnGezet && t.start != null && t.start > nu) {
+      const lijn = document.createElement("div");
+      lijn.className = "nulijn";
+      lijn.innerHTML = "<span></span>";
+      lijn.querySelector("span").textContent = toonTijd(nu) + " nu";
+      elLijst.appendChild(lijn);
+      lijnGezet = true;
+    }
+
+    const kaart = document.createElement("button");
+    kaart.type = "button";
+    kaart.className = "blok" + (bezig ? " nu" : "") + (voorbij ? " voorbij" : "");
+    const kleur = soortKleur(blok.wat);
+    if (kleur) kaart.style.setProperty("--soort", kleur.kleur);
+    if (kleur) kaart.style.setProperty("--soort-zacht", kleur.zacht);
+    else if (RUST.some(r => (blok.wieWaar || "").startsWith(r))) kaart.style.setProperty("--soort", "var(--ink-faint)");
+
+    const tijd = document.createElement("div");
+    tijd.className = "tijd";
+    tijd.textContent = toonTijd(t.start) || blok.tijd;
+    const tot = document.createElement("span");
+    tot.textContent = toonTijd(t.eind);
+    tijd.appendChild(tot);
+
+    const body = document.createElement("div");
+    body.className = "body";
+    if (bezig) {
+      const badge = document.createElement("span");
+      badge.className = "nu-badge";
+      badge.textContent = "NU";
+      body.appendChild(badge);
+    }
+    const wie = document.createElement("div");
+    wie.className = "wie";
+    wie.textContent = blok.wieWaar || "—";
+    body.appendChild(wie);
+
+    if (blok.wat) {
+      const tag = document.createElement("span");
+      tag.className = "tag";
+      tag.textContent = blok.wat;
+      body.appendChild(tag);
+    }
+    const notitie = notities[blok.id];
+    if (notitie) {
+      const n = document.createElement("div");
+      n.className = "notitie";
+      n.textContent = "📝 " + notitie;
+      body.appendChild(n);
+    }
+
+    kaart.appendChild(tijd);
+    kaart.appendChild(body);
+    kaart.onclick = () => openSheet(blok.id);
+    elLijst.appendChild(kaart);
+    if (bezig) nuElement = kaart;
+  }
+
+  if (isVandaag && !lijnGezet && blokken.length) {
+    const lijn = document.createElement("div");
+    lijn.className = "nulijn";
+    lijn.innerHTML = "<span></span>";
+    lijn.querySelector("span").textContent = toonTijd(nu) + " nu";
+    elLijst.appendChild(lijn);
+  }
+
+  const plus = document.createElement("button");
+  plus.type = "button";
+  plus.className = "toevoegen";
+  plus.textContent = "+ Blok toevoegen op " + actieveDag;
+  plus.onclick = () => openSheet(null);
+  elLijst.appendChild(plus);
+
+  if (eersteKeer && isVandaag) {
+    eersteKeer = false;
+    const doel = nuElement || elLijst.querySelector(".nulijn");
+    if (doel) requestAnimationFrame(() => doel.scrollIntoView({ block: "center" }));
+  }
+}
+
+/* =========================================================
+   5. SHEET (notitie + bewerken)
+   ========================================================= */
+const overlay = document.getElementById("overlay");
+const sheet = document.getElementById("sheet");
+const menuSheet = document.getElementById("menuSheet");
+const veldNotitie = document.getElementById("notitie");
+const veldVan = document.getElementById("vanTijd");
+const veldTot = document.getElementById("totTijd");
+const veldWie = document.getElementById("wieWaar");
+const veldWat = document.getElementById("wat");
+const bewerkVak = document.getElementById("bewerkVak");
+
+document.getElementById("soorten").innerHTML =
+  Object.keys(SOORTEN).map(s => '<option value="' + s + '">').join("");
+
+let huidigId = null;   // null = nieuw blok
+
+function vindBlok(id) {
+  for (const d of DAGEN) {
+    const gevonden = rooster[d.sleutel].find(b => b.id === id);
+    if (gevonden) return { blok: gevonden, dag: d.sleutel };
+  }
+  return null;
+}
+
+function openSheet(id) {
+  huidigId = id;
+  const nieuw = id === null;
+  bewerkVak.open = nieuw;
+  document.getElementById("verwijderKnop").style.display = nieuw ? "none" : "";
+
+  if (nieuw) {
+    document.getElementById("sheetTitel").textContent = "Nieuw blok";
+    document.getElementById("sheetSub").textContent = "Wordt toegevoegd op " + actieveDag + ".";
+    veldNotitie.value = "";
+    veldVan.value = ""; veldTot.value = ""; veldWie.value = ""; veldWat.value = "";
+  } else {
+    const { blok } = vindBlok(id);
+    const t = ontleedTijd(blok.tijd);
+    document.getElementById("sheetTitel").textContent = blok.wieWaar || "Blok";
+    document.getElementById("sheetSub").textContent =
+      toonTijd(t.start) + " – " + toonTijd(t.eind) + (blok.wat ? " · " + blok.wat : "");
+    veldNotitie.value = notities[id] || "";
+    veldVan.value = naarInput(t.start);
+    veldTot.value = naarInput(t.eind);
+    veldWie.value = blok.wieWaar || "";
+    veldWat.value = blok.wat || "";
+  }
+  toon(sheet);
+  setTimeout(() => veldNotitie.focus({ preventScroll: true }), nieuw ? 400 : 320);
+}
+
+function toon(welke) {
+  overlay.classList.add("open");
+  welke.classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+function sluit() {
+  overlay.classList.remove("open");
+  sheet.classList.remove("open");
+  menuSheet.classList.remove("open");
+  document.body.style.overflow = "";
+  if (document.activeElement) document.activeElement.blur();
+}
+
+function opslaan() {
+  const notitie = veldNotitie.value.trim();
+  const van = vanInput(veldVan.value);
+  const tot = vanInput(veldTot.value);
+  const tijd = (van != null && tot != null) ? toonTijd(van) + " - " + toonTijd(tot) : null;
+
+  if (huidigId === null) {
+    if (!tijd) { alert("Vul een begin- en eindtijd in."); return; }
+    const id = "extra-" + Date.now();
+    rooster[actieveDag].push({ id, tijd, wieWaar: veldWie.value.trim() || "?", wat: veldWat.value.trim() });
+    if (notitie) notities[id] = notitie;
+  } else {
+    const { blok } = vindBlok(huidigId);
+    if (tijd) blok.tijd = tijd;
+    blok.wieWaar = veldWie.value.trim() || blok.wieWaar;
+    blok.wat = veldWat.value.trim();
+    if (notitie) notities[huidigId] = notitie; else delete notities[huidigId];
+  }
+  bewaarRooster();
+  bewaarNotities();
+  sluit();
+  teken();
+}
+
+function verwijder() {
+  if (huidigId === null) return;
+  const gevonden = vindBlok(huidigId);
+  if (!gevonden) return;
+  if (!confirm("Dit blok verwijderen?\n\n" + gevonden.blok.tijd + " — " + gevonden.blok.wieWaar)) return;
+  rooster[gevonden.dag] = rooster[gevonden.dag].filter(b => b.id !== huidigId);
+  delete notities[huidigId];
+  bewaarRooster();
+  bewaarNotities();
+  sluit();
+  teken();
+}
+
+document.getElementById("opslaanKnop").onclick = opslaan;
+document.getElementById("annuleerKnop").onclick = sluit;
+document.getElementById("verwijderKnop").onclick = verwijder;
+overlay.onclick = sluit;
+document.addEventListener("keydown", e => { if (e.key === "Escape") sluit(); });
+
+/* =========================================================
+   6. MENU
+   ========================================================= */
+document.getElementById("menuKnop").onclick = () => {
+  const aantal = Object.keys(notities).length;
+  document.getElementById("menuStatus").textContent =
+    (isAangepast() ? "Rooster is aangepast" : "Origineel rooster") +
+    " · " + aantal + " notitie" + (aantal === 1 ? "" : "s");
+  toon(menuSheet);
+};
+document.getElementById("menuSluit").onclick = sluit;
+document.getElementById("resetRooster").onclick = () => {
+  if (!confirm("Het rooster terugzetten naar het origineel?\nJe notities blijven bewaard.")) return;
+  localStorage.removeItem(SLEUTEL_ROOSTER);
+  rooster = maakBasis();
+  sluit();
+  teken();
+};
+document.getElementById("wisNotities").onclick = () => {
+  if (!confirm("Alle notities wissen?")) return;
+  notities = {};
+  bewaarNotities();
+  sluit();
+  teken();
+};
+
+/* =========================================================
+   7. SWIPE tussen dagen
+   ========================================================= */
+let startX = 0, startY = 0, volgen = false;
+document.addEventListener("touchstart", e => {
+  if (sheet.classList.contains("open") || menuSheet.classList.contains("open")) return;
+  startX = e.touches[0].clientX; startY = e.touches[0].clientY; volgen = true;
+}, { passive: true });
+document.addEventListener("touchend", e => {
+  if (!volgen) return;
+  volgen = false;
+  const dx = e.changedTouches[0].clientX - startX;
+  const dy = e.changedTouches[0].clientY - startY;
+  if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.8) return;
+  const i = DAGEN.findIndex(d => d.sleutel === actieveDag);
+  const nieuw = dx < 0 ? i + 1 : i - 1;
+  if (nieuw < 0 || nieuw >= DAGEN.length) return;
+  actieveDag = DAGEN[nieuw].sleutel;
+  eersteKeer = false;
+  teken();
+  window.scrollTo({ top: 0 });
+}, { passive: true });
+
+/* =========================================================
+   8. LEVEND HOUDEN
+   ========================================================= */
+teken();
+setInterval(teken, 30000);
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") {
+    const vandaag = huidigeDagSleutel();
+    if (vandaag && vandaag !== actieveDag && !sheet.classList.contains("open")) {
+      actieveDag = vandaag; eersteKeer = true;
+    }
+    teken();
+  }
+});
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", teken);
+
+/* service worker voor offline gebruik */
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
