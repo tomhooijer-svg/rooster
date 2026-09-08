@@ -38,9 +38,10 @@ deelknop levert hetzelfde resultaat met één tik extra.
 
 ## Synchroniseren tussen iPhone en Mac
 
-Standaard staan notities alleen op het apparaat waar je ze typt. Wil je ze op allebei,
-vul dan bovenin `index.html` het blok `SYNC` in met de gegevens van een eigen (gratis)
-Supabase-project. Zolang die velden leeg zijn, blijft alles lokaal.
+Notities worden gesynchroniseerd via een eigen (gratis) Supabase-project. De gegevens
+daarvan staan bovenin `index.html` in het blok `SYNC`; maak je die velden leeg, dan blijft
+alles weer lokaal. Hieronder staat hoe zo'n project is opgezet, voor als je het ooit
+opnieuw moet doen.
 
 **Project aanmaken (éénmalig, ongeveer 5 minuten)**
 
@@ -74,11 +75,13 @@ create policy "eigen rij wijzigen" on rooster_data for update using (auth.uid() 
 4. Ga naar **Authentication → URL Configuration**. Zet bij *Site URL* en bij *Redirect URLs*
    het adres van de app: `https://tomhooijer-svg.github.io/rooster/`. Zonder dit werkt de
    inloglink uit je mail niet.
-5. Ga naar **Project Settings → API** en kopieer de **Project URL** en de **anon public**
-   key. Die twee zet je in het `SYNC`-blok bovenin `index.html`.
+5. Ga naar **Project Settings → API** en kopieer de **Project URL** en de **publishable**
+   key (`sb_publishable_…`). Die twee staan in het `SYNC`-blok bovenin `index.html`.
 
-De anon key is bedoeld om openbaar te zijn; die mag dus gewoon in de repo staan. De
-**service_role** key niet — die geeft toegang tot alles en hoort nergens in de app.
+De publishable key is bedoeld om openbaar te zijn; die mag dus gewoon in de repo staan.
+Wat je afschermt zijn de row-level-security-regels hierboven, niet die sleutel. De
+**secret** key (`sb_secret_…`) hoort nergens in de app en nergens in de repo: die omzeilt
+alle regels en geeft toegang tot alles.
 
 **Gebruiken**: open de app, ga naar ⚙︎ → Synchroniseren, vul je e-mailadres in en klik op
 "Stuur mij een inloglink". Je krijgt een mail met een link; die open je op het apparaat

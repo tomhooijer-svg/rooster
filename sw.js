@@ -6,7 +6,7 @@
    - iconen en manifest: eerst de cache, op de achtergrond verversen.
 
    Verhoog VERSIE na elke wijziging in index.html. */
-const VERSIE = "rooster-tom-v3";
+const VERSIE = "rooster-tom-v4";
 const BESTANDEN = [
   "./",
   "./index.html",
