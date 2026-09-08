@@ -1,7 +1,12 @@
 /* Service worker voor Rooster Tom.
-   LET OP: verhoog VERSIE na elke wijziging in index.html,
-   anders blijft de oude versie uit de cache komen. */
-const VERSIE = "rooster-tom-v2";
+
+   Strategie:
+   - index.html en sw.js: eerst het netwerk (met korte time-out), anders de cache.
+     Zo zie je een nieuwe versie meteen, en werkt de app nog steeds zonder internet.
+   - iconen en manifest: eerst de cache, op de achtergrond verversen.
+
+   Verhoog VERSIE na elke wijziging in index.html. */
+const VERSIE = "rooster-tom-v3";
 const BESTANDEN = [
   "./",
   "./index.html",
@@ -25,18 +30,40 @@ self.addEventListener("activate", event => {
   );
 });
 
-/* Cache eerst (snel + offline), op de achtergrond verversen. */
+function bewaar(verzoek, antwoord) {
+  if (antwoord && antwoord.status === 200 && antwoord.type === "basic") {
+    const kopie = antwoord.clone();
+    caches.open(VERSIE).then(cache => cache.put(verzoek, kopie));
+  }
+  return antwoord;
+}
+
 self.addEventListener("fetch", event => {
-  if (event.request.method !== "GET") return;
+  const verzoek = event.request;
+  if (verzoek.method !== "GET") return;
+
+  const url = new URL(verzoek.url);
+  const isPagina = verzoek.mode === "navigate" ||
+                   url.pathname.endsWith("/") ||
+                   url.pathname.endsWith(".html");
+
+  if (isPagina) {
+    /* netwerk eerst, met een time-out zodat een trage verbinding je niet ophoudt */
+    event.respondWith(
+      Promise.race([
+        fetch(verzoek).then(a => bewaar(verzoek, a)),
+        new Promise(resolve => setTimeout(() => resolve(null), 3000))
+      ])
+        .then(a => a || caches.match(verzoek).then(c => c || fetch(verzoek)))
+        .catch(() => caches.match(verzoek).then(c => c || caches.match("./index.html")))
+    );
+    return;
+  }
+
+  /* de rest: cache eerst, op de achtergrond bijwerken */
   event.respondWith(
-    caches.match(event.request).then(gecached => {
-      const vanNet = fetch(event.request).then(antwoord => {
-        if (antwoord && antwoord.status === 200 && antwoord.type === "basic") {
-          const kopie = antwoord.clone();
-          caches.open(VERSIE).then(cache => cache.put(event.request, kopie));
-        }
-        return antwoord;
-      }).catch(() => gecached);
+    caches.match(verzoek).then(gecached => {
+      const vanNet = fetch(verzoek).then(a => bewaar(verzoek, a)).catch(() => gecached);
       return gecached || vanNet;
     })
   );

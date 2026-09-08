@@ -111,6 +111,25 @@
 
   /* ---------- lijst ---------- */
   main{padding:14px 16px calc(120px + var(--safe-bottom)); max-width:640px; margin:0 auto}
+
+  /* breed scherm: drie dagen naast elkaar */
+  body.breed main{max-width:1180px; padding-top:18px}
+  body.breed nav{display:none}
+  body.breed .status{max-width:1180px; margin-left:auto; margin-right:auto}
+  .kolommen{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:20px; align-items:start}
+  .kolomkop{
+    display:flex; align-items:baseline; gap:8px; margin:0 0 10px; padding:0 2px;
+    font-size:17px; font-weight:700; letter-spacing:-.01em;
+  }
+  .kolomkop .kdatum{font-weight:500; font-size:13.5px; color:var(--ink-faint)}
+  .kolomkop .vandaag{
+    margin-left:auto; font-size:11px; font-weight:800; letter-spacing:.06em;
+    color:#fff; background:var(--nu); padding:2px 7px; border-radius:999px;
+  }
+  @media (hover:hover){
+    .blok:hover{border-color:var(--soort,var(--accent))}
+    .menuknop:hover, .icoonknop:hover, .toevoegen:hover{background:var(--accent-soft)}
+  }
   .blok{
     display:flex; gap:12px; width:100%; text-align:left;
     background:var(--card); border:0; border-left:4px solid var(--soort,var(--line));
@@ -349,11 +368,21 @@
   <div class="greep"></div>
   <h2>Instellingen</h2>
   <div class="subkop" id="menuStatus"></div>
+  <button class="menuknop" id="naarSync">Synchroniseren<small id="syncSamenvatting">—</small></button>
   <button class="menuknop" id="naarLeerkrachten">Leerkracht per groep<small>Namen die boven de overdracht komen te staan.</small></button>
   <button class="menuknop" id="resetRooster">Rooster terugzetten naar origineel<small>Tijden, namen, leerlingen en activiteiten terug naar het basisrooster. Notities blijven staan.</small></button>
   <button class="menuknop" id="wisNotities">Alle notities wissen<small>Verwijdert de notities van alle weken, ook de oude.</small></button>
   <div class="knoppen"><button class="knop" id="menuSluit">Sluiten</button></div>
   <div class="voet">Rooster Tom · werkt offline · notities staan alleen op dit toestel</div>
+</section>
+
+<!-- sync-sheet -->
+<section class="sheet" id="syncSheet" role="dialog" aria-modal="true" aria-label="Synchroniseren">
+  <div class="greep"></div>
+  <h2>Synchroniseren</h2>
+  <div class="subkop" id="syncUitleg">—</div>
+  <div id="syncInhoud"></div>
+  <div class="knoppen"><button class="knop" id="syncSluit">Sluiten</button></div>
 </section>
 
 <!-- leerkrachten-sheet -->
@@ -429,6 +458,13 @@ const BASIS_ROOSTER = {
 
 const AFZENDER = "Tom";
 
+/* Synchroniseren tussen je iPhone en je Mac. Zolang deze twee velden leeg zijn,
+   blijft alles op het apparaat zelf staan en werkt de app verder hetzelfde. */
+const SYNC = {
+  url: "",      // bijv. https://abcdefgh.supabase.co
+  anonKey: ""   // de publieke anon key van het project
+};
+
 const DAGEN = [
   { sleutel:"dinsdag",   kort:"Di", jsDag:2 },
   { sleutel:"donderdag", kort:"Do", jsDag:4 },
@@ -451,6 +487,9 @@ const RUST = ["Pauze", "Eten"];
 const K_ROOSTER = "roosterTom.rooster.v2";
 const K_NOTITIES = "roosterTom.notities.v2";
 const K_LEERKRACHTEN = "roosterTom.leerkrachten.v1";
+const K_META = "roosterTom.meta.v1";
+const K_SESSIE = "roosterTom.sessie.v1";
+const K_LAATSTE_SYNC = "roosterTom.laatsteSync.v1";
 const K_NOTITIES_OUD = "roosterTom.notities.v1";
 
 function lees(sleutel, standaard) {
@@ -486,10 +525,13 @@ let leerkrachten = lees(K_LEERKRACHTEN, {}) || {};
 if (!rooster || !DAGEN.every(d => Array.isArray(rooster[d.sleutel]))) rooster = maakBasis();
 for (const d of DAGEN) for (const b of rooster[d.sleutel]) if (!Array.isArray(b.leerlingen)) b.leerlingen = [];
 
+let meta = lees(K_META, null) || { roosterM: 0, leerkrachtenM: 0 };
+
 const roosterAangepast = () => localStorage.getItem(K_ROOSTER) !== null;
-function bewaarRooster() { schrijf(K_ROOSTER, rooster); }
-function bewaarNotities() { schrijf(K_NOTITIES, notities); }
-function bewaarLeerkrachten() { schrijf(K_LEERKRACHTEN, leerkrachten); }
+function bewaarRooster() { schrijf(K_ROOSTER, rooster); meta.roosterM = Date.now(); schrijf(K_META, meta); planSync(); }
+function bewaarNotities() { schrijf(K_NOTITIES, notities); planSync(); }
+function bewaarLeerkrachten() { schrijf(K_LEERKRACHTEN, leerkrachten); meta.leerkrachtenM = Date.now(); schrijf(K_META, meta); planSync(); }
+function bewaarAlles() { schrijf(K_ROOSTER, rooster); schrijf(K_NOTITIES, notities); schrijf(K_LEERKRACHTEN, leerkrachten); schrijf(K_META, meta); }
 
 /* =========================================================
    3. TIJD & DATUM
@@ -565,20 +607,60 @@ let actieveDag = huidigeDagSleutel() || eerstvolgendeDag();
 let eersteKeer = true;
 
 const dagInfo = sleutel => DAGEN.find(d => d.sleutel === sleutel);
-function datumVanActieveDag() {
-  return datumInWeek(maandagVan(new Date()), dagInfo(actieveDag).jsDag);
-}
+const datumVanDag = sleutel => datumInWeek(maandagVan(new Date()), dagInfo(sleutel).jsDag);
+const datumVanActieveDag = () => datumVanDag(actieveDag);
+const breed = () => window.matchMedia("(min-width: 900px)").matches;
 const notitiesOp = datumIso => notities[datumIso] || {};
 
-function zetNotitie(datumIso, sleutel, tekst) {
+/* Een notitie is { t: tekst, m: gewijzigd-op }. Oudere versies bewaarden een
+   kale string; tekstVan() begrijpt allebei. Een gewiste notitie blijft als lege
+   waarde staan, zodat het wissen ook naar je andere apparaat meereist. */
+function tekstVan(waarde) {
+  if (!waarde) return "";
+  return typeof waarde === "string" ? waarde : (waarde.t || "");
+}
+function momentVan(waarde) {
+  if (!waarde || typeof waarde === "string") return 0;
+  return waarde.m || 0;
+}
+function zetNotitie(datumIso, sleutel, tekst, moment) {
   tekst = (tekst || "").trim();
-  if (tekst) {
-    notities[datumIso] = notities[datumIso] || {};
-    notities[datumIso][sleutel] = tekst;
-  } else if (notities[datumIso]) {
-    delete notities[datumIso][sleutel];
-    if (!Object.keys(notities[datumIso]).length) delete notities[datumIso];
+  const bestaand = notities[datumIso] && notities[datumIso][sleutel];
+  if (!tekst && !tekstVan(bestaand)) return;
+  notities[datumIso] = notities[datumIso] || {};
+  notities[datumIso][sleutel] = { t: tekst, m: moment || Date.now() };
+}
+
+/* Oude notities (kale strings) krijgen alsnog een tijdstempel, anders zouden ze
+   bij de eerste synchronisatie altijd verliezen. Lege notities die al lang weg
+   zijn, hoeven niet eeuwig mee te reizen. */
+function schoonNotities() {
+  const nu = Date.now();
+  const grens = nu - 60 * 24 * 3600 * 1000;
+  let veranderd = false;
+  for (const datum of Object.keys(notities)) {
+    for (const [sleutel, waarde] of Object.entries(notities[datum])) {
+      if (typeof waarde === "string") {
+        notities[datum][sleutel] = { t: waarde, m: nu };
+        veranderd = true;
+      } else if (!tekstVan(waarde) && momentVan(waarde) < grens) {
+        delete notities[datum][sleutel];
+        veranderd = true;
+      }
+    }
+    if (!Object.keys(notities[datum]).length) { delete notities[datum]; veranderd = true; }
   }
+  return veranderd;
+}
+if (schoonNotities()) schrijf(K_NOTITIES, notities);
+
+function aantalNotities() {
+  let aantal = 0, dagen = 0;
+  for (const datum of Object.keys(notities)) {
+    const raak = Object.values(notities[datum]).filter(tekstVan).length;
+    if (raak) { aantal += raak; dagen++; }
+  }
+  return { aantal, dagen };
 }
 
 /* eenmalige overname van de notities uit versie 1 (die waren niet gedateerd) */
@@ -620,16 +702,17 @@ function tekenTabs() {
 }
 
 function tekenDatum() {
-  const datum = datumVanActieveDag();
+  const datum = breed() ? new Date() : datumVanActieveDag();
   const isVandaag = iso(datum) === iso(new Date());
   const naam = DAGNAMEN[datum.getDay()];
   elDatum.textContent = naam.charAt(0).toUpperCase() + naam.slice(1) + " " + kortDatum(datum) + (isVandaag ? " · vandaag" : "");
 }
 
 function tekenStatus() {
-  const isVandaag = iso(datumVanActieveDag()) === iso(new Date());
-  if (!isVandaag) { elStatus.className = "status"; return; }
-  const blokken = sorteer(rooster[actieveDag]);
+  const vandaag = huidigeDagSleutel();
+  const toon = vandaag && (breed() || actieveDag === vandaag);
+  if (!toon) { elStatus.className = "status"; return; }
+  const blokken = sorteer(rooster[vandaag]);
   const nu = nuMinuten();
   const huidig = blokken.find(b => { const t = ontleedTijd(b.tijd); return t.start != null && nu >= t.start && nu < t.eind; });
   const volgend = blokken.find(b => { const t = ontleedTijd(b.tijd); return t.start != null && t.start > nu; });
@@ -674,28 +757,45 @@ function maakNuLijn(nu) {
   return lijn;
 }
 
-function teken() {
-  tekenTabs();
-  tekenDatum();
-  tekenStatus();
-  tekenOverdrachtTelling();
+let laatsteNuElement = null;
 
-  const datumIso = iso(datumVanActieveDag());
+function maakKolom(dagSleutel) {
+  const kolom = document.createElement("section");
+  const datum = datumVanDag(dagSleutel);
+  const datumIso = iso(datum);
   const dagNotities = notitiesOp(datumIso);
-  const blokken = sorteer(rooster[actieveDag]);
+  const blokken = sorteer(rooster[dagSleutel]);
   const isVandaag = datumIso === iso(new Date());
   const nu = nuMinuten();
-  elLijst.innerHTML = "";
+
+  if (breed()) {
+    const kop = document.createElement("div");
+    kop.className = "kolomkop";
+    const naam = DAGNAMEN[datum.getDay()];
+    const titel = document.createElement("span");
+    titel.textContent = naam.charAt(0).toUpperCase() + naam.slice(1);
+    const dat = document.createElement("span");
+    dat.className = "kdatum";
+    dat.textContent = kortDatum(datum);
+    kop.appendChild(titel);
+    kop.appendChild(dat);
+    if (isVandaag) {
+      const merk = document.createElement("span");
+      merk.className = "vandaag";
+      merk.textContent = "VANDAAG";
+      kop.appendChild(merk);
+    }
+    kolom.appendChild(kop);
+  }
 
   if (!blokken.length) {
     const leeg = document.createElement("p");
     leeg.className = "leeg";
     leeg.textContent = "Nog geen blokken op deze dag.";
-    elLijst.appendChild(leeg);
+    kolom.appendChild(leeg);
   }
 
   let lijnGezet = false;
-  let nuElement = null;
 
   for (const blok of blokken) {
     const t = ontleedTijd(blok.tijd);
@@ -703,7 +803,7 @@ function teken() {
     const voorbij = isVandaag && t.eind != null && nu >= t.eind;
 
     if (isVandaag && !lijnGezet && t.start != null && t.start > nu) {
-      elLijst.appendChild(maakNuLijn(nu));
+      kolom.appendChild(maakNuLijn(nu));
       lijnGezet = true;
     }
 
@@ -746,7 +846,7 @@ function teken() {
     }
 
     for (const l of blok.leerlingen) {
-      const tekst = dagNotities[l.id];
+      const tekst = tekstVan(dagNotities[l.id]);
       if (!tekst) continue;
       const n = document.createElement("div");
       n.className = "notitie";
@@ -756,33 +856,56 @@ function teken() {
       n.appendChild(document.createTextNode(tekst));
       body.appendChild(n);
     }
-    if (dagNotities[blok.id]) {
+    if (tekstVan(dagNotities[blok.id])) {
       const n = document.createElement("div");
       n.className = "notitie";
-      n.textContent = "📝 " + dagNotities[blok.id];
+      n.textContent = "📝 " + tekstVan(dagNotities[blok.id]);
       body.appendChild(n);
     }
 
     kaart.appendChild(tijd);
     kaart.appendChild(body);
-    kaart.onclick = () => openSheet(blok.id);
-    elLijst.appendChild(kaart);
-    if (bezig) nuElement = kaart;
+    kaart.onclick = () => openSheet(blok.id, dagSleutel);
+    kolom.appendChild(kaart);
+    if (bezig) laatsteNuElement = kaart;
   }
 
-  if (isVandaag && !lijnGezet && blokken.length) elLijst.appendChild(maakNuLijn(nu));
+  if (isVandaag && !lijnGezet && blokken.length) kolom.appendChild(maakNuLijn(nu));
 
   const plus = document.createElement("button");
   plus.type = "button";
   plus.className = "toevoegen";
-  plus.textContent = "+ Blok toevoegen op " + actieveDag;
-  plus.onclick = () => openSheet(null);
-  elLijst.appendChild(plus);
+  plus.textContent = breed() ? "+ Blok toevoegen" : "+ Blok toevoegen op " + dagSleutel;
+  plus.onclick = () => openSheet(null, dagSleutel);
+  kolom.appendChild(plus);
 
-  if (eersteKeer && isVandaag) {
+  return kolom;
+}
+
+function teken() {
+  const isBreed = breed();
+  document.body.classList.toggle("breed", isBreed);
+  tekenTabs();
+  tekenDatum();
+  tekenStatus();
+  tekenOverdrachtTelling();
+
+  elLijst.innerHTML = "";
+  laatsteNuElement = null;
+
+  if (isBreed) {
+    const grid = document.createElement("div");
+    grid.className = "kolommen";
+    for (const d of DAGEN) grid.appendChild(maakKolom(d.sleutel));
+    elLijst.appendChild(grid);
+  } else {
+    elLijst.appendChild(maakKolom(actieveDag));
+  }
+
+  if (eersteKeer) {
     eersteKeer = false;
-    const doel = nuElement || elLijst.querySelector(".nulijn");
-    if (doel) requestAnimationFrame(() => doel.scrollIntoView({ block: "center" }));
+    const doel = laatsteNuElement || elLijst.querySelector(".nulijn");
+    if (doel && !isBreed) requestAnimationFrame(() => doel.scrollIntoView({ block: "center" }));
   }
 }
 
@@ -824,7 +947,7 @@ function verzamelWeek(maandag) {
     if (!Object.keys(dagNotities).length) continue;
     for (const blok of sorteer(rooster[d.sleutel] || [])) {
       for (const l of blok.leerlingen) {
-        const tekst = dagNotities[l.id];
+        const tekst = tekstVan(dagNotities[l.id]);
         if (!tekst) continue;
         const groep = (l.groep || "").trim() || "Zonder groep";
         (perGroep[groep] = perGroep[groep] || []).push({ datum, blok, leerling: l, tekst });
@@ -941,6 +1064,7 @@ document.getElementById("soorten").innerHTML =
   Object.keys(SOORTEN).map(s => '<option value="' + s + '">').join("");
 
 let huidigId = null;      // null = nieuw blok
+let huidigeDagVanSheet = null;
 let huidigeDatum = null;  // datum waarop notities worden opgeslagen
 
 function vindBlok(id) {
@@ -980,7 +1104,7 @@ function tekenNotitieVelden(blok) {
     ta.id = "notitie-blok";
     ta.dataset.sleutel = blok ? blok.id : "nieuw";
     ta.placeholder = "Alleen voor jezelf — gaat niet mee in een overdracht";
-    ta.value = blok ? (dagNotities[blok.id] || "") : "";
+    ta.value = blok ? tekstVan(dagNotities[blok.id]) : "";
     veld.appendChild(label);
     veld.appendChild(ta);
     velden.appendChild(veld);
@@ -1024,7 +1148,7 @@ function tekenNotitieVelden(blok) {
     const ta = document.createElement("textarea");
     ta.dataset.sleutel = l.id;
     ta.placeholder = "Notitie voor de leerkracht van " + (l.groep ? "groep " + l.groep : l.naam);
-    ta.value = dagNotities[l.id] || "";
+    ta.value = tekstVan(dagNotities[l.id]);
 
     wrap.appendChild(kop);
     wrap.appendChild(ta);
@@ -1032,14 +1156,16 @@ function tekenNotitieVelden(blok) {
   }
 }
 
-function openSheet(id) {
+function openSheet(id, dagSleutel) {
+  dagSleutel = dagSleutel || actieveDag;
+  huidigeDagVanSheet = dagSleutel;
   huidigId = id;
-  huidigeDatum = iso(datumVanActieveDag());
+  huidigeDatum = iso(datumVanDag(dagSleutel));
   const nieuw = id === null;
   bewerkVak.open = nieuw;
   document.getElementById("verwijderKnop").style.display = nieuw ? "none" : "";
 
-  const datum = datumVanActieveDag();
+  const datum = datumVanDag(dagSleutel);
   const dagNaam = DAGNAMEN[datum.getDay()];
   const datumTekst = dagNaam.charAt(0).toUpperCase() + dagNaam.slice(1) + " " + kortDatum(datum);
 
@@ -1047,7 +1173,7 @@ function openSheet(id) {
 
   if (nieuw) {
     document.getElementById("sheetTitel").textContent = "Nieuw blok";
-    document.getElementById("sheetSub").textContent = "Wordt toegevoegd op " + actieveDag + ".";
+    document.getElementById("sheetSub").textContent = "Wordt toegevoegd op " + dagSleutel + ".";
     veldVan.value = ""; veldTot.value = ""; veldWie.value = ""; veldWat.value = "";
     tekenNotitieVelden(null);
   } else {
@@ -1075,7 +1201,7 @@ function toon(welke) {
 }
 function sluit() {
   overlay.classList.remove("open");
-  for (const s of [sheet, overdrachtSheet, menuSheet, lkSheet]) s.classList.remove("open");
+  for (const s of [sheet, overdrachtSheet, menuSheet, lkSheet, document.getElementById("syncSheet")]) s.classList.remove("open");
   document.body.style.overflow = "";
   if (document.activeElement) document.activeElement.blur();
 }
@@ -1104,7 +1230,7 @@ function opslaan() {
     const id = "extra-" + Date.now();
     const blok = { id, tijd, wieWaar: veldWie.value.trim() || "?", wat: veldWat.value.trim(), leerlingen: [] };
     blok.leerlingen = leesLeerlingRijen([]).map((l, i) => ({ id: id + "-l" + i, naam: l.naam, groep: l.groep }));
-    rooster[actieveDag].push(blok);
+    rooster[huidigeDagVanSheet || actieveDag].push(blok);
     const ta = velden.querySelector("textarea");
     if (ta) zetNotitie(huidigeDatum, id, ta.value);
   } else {
@@ -1159,13 +1285,12 @@ document.getElementById("weekVorige").onclick = () => { weekOffset--; tekenOverd
 document.getElementById("weekVolgende").onclick = () => { if (weekOffset < 0) { weekOffset++; tekenOverdracht(); } };
 
 document.getElementById("menuKnop").onclick = () => {
-  let aantal = 0;
-  for (const datum of Object.keys(notities)) aantal += Object.keys(notities[datum]).length;
-  const dagen = Object.keys(notities).length;
+  const { aantal, dagen } = aantalNotities();
   document.getElementById("menuStatus").textContent =
     (roosterAangepast() ? "Rooster is aangepast" : "Origineel rooster") +
     " · " + aantal + " notitie" + (aantal === 1 ? "" : "s") +
     " op " + dagen + " dag" + (dagen === 1 ? "" : "en");
+  tekenSyncSamenvatting();
   toon(menuSheet);
 };
 document.getElementById("menuSluit").onclick = sluit;
@@ -1222,10 +1347,266 @@ document.getElementById("naarLeerkrachten").onclick = () => {
 document.getElementById("lkSluit").onclick = sluit;
 
 /* =========================================================
-   9. SWIPE tussen dagen
+   9. SYNCHRONISEREN (Supabase)
+   Vul hieronder de gegevens van je eigen project in. Zolang ze leeg
+   zijn, werkt de app precies zoals hiervoor: alles blijft lokaal.
+   ========================================================= */
+let sessie = lees(K_SESSIE, null);
+let laatsteSync = lees(K_LAATSTE_SYNC, 0) || 0;
+let bezigMetSync = false;
+let syncTimer = null;
+let syncFout = "";
+
+const syncIngesteld = () => !!(SYNC.url && SYNC.anonKey);
+const ingelogd = () => !!(sessie && sessie.access_token);
+
+function gebruikerId() {
+  try { return JSON.parse(atob(sessie.access_token.split(".")[1])).sub; }
+  catch (e) { return null; }
+}
+function gebruikerEmail() {
+  try { return JSON.parse(atob(sessie.access_token.split(".")[1])).email || ""; }
+  catch (e) { return ""; }
+}
+
+async function api(pad, opties) {
+  opties = opties || {};
+  const headers = Object.assign({ apikey: SYNC.anonKey, "Content-Type": "application/json" }, opties.headers || {});
+  if (ingelogd()) headers.Authorization = "Bearer " + sessie.access_token;
+  const antwoord = await fetch(SYNC.url + pad, Object.assign({}, opties, { headers }));
+  if (antwoord.status === 401 && sessie && sessie.refresh_token && !opties._tweedePoging) {
+    if (await vernieuwSessie()) return api(pad, Object.assign({}, opties, { _tweedePoging: true }));
+  }
+  return antwoord;
+}
+
+async function vernieuwSessie() {
+  try {
+    const antwoord = await fetch(SYNC.url + "/auth/v1/token?grant_type=refresh_token", {
+      method: "POST",
+      headers: { apikey: SYNC.anonKey, "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh_token: sessie.refresh_token })
+    });
+    if (!antwoord.ok) { sessie = null; schrijf(K_SESSIE, null); return false; }
+    const gegevens = await antwoord.json();
+    sessie = { access_token: gegevens.access_token, refresh_token: gegevens.refresh_token };
+    schrijf(K_SESSIE, sessie);
+    return true;
+  } catch (e) { return false; }
+}
+
+async function stuurInlogLink(email) {
+  const terug = location.href.split("#")[0];
+  const antwoord = await fetch(SYNC.url + "/auth/v1/otp?redirect_to=" + encodeURIComponent(terug), {
+    method: "POST",
+    headers: { apikey: SYNC.anonKey, "Content-Type": "application/json" },
+    body: JSON.stringify({ email, create_user: true })
+  });
+  return antwoord.ok;
+}
+
+/* Na het klikken op de mail-link komt de sessie terug in de URL. */
+function vangSessieUitUrl() {
+  if (!location.hash || location.hash.indexOf("access_token") === -1) return false;
+  const velden = new URLSearchParams(location.hash.slice(1));
+  sessie = { access_token: velden.get("access_token"), refresh_token: velden.get("refresh_token") };
+  schrijf(K_SESSIE, sessie);
+  history.replaceState(null, "", location.pathname + location.search);
+  return true;
+}
+
+function normNotitie(waarde) {
+  if (waarde == null) return null;
+  return typeof waarde === "string" ? { t: waarde, m: 0 } : { t: waarde.t || "", m: waarde.m || 0 };
+}
+
+/* Per notitie wint de meest recente wijziging — ook een wissing. */
+function voegNotitiesSamen(links, rechts) {
+  const uit = {};
+  const datums = new Set([...Object.keys(links || {}), ...Object.keys(rechts || {})]);
+  for (const datum of datums) {
+    const a = (links || {})[datum] || {};
+    const b = (rechts || {})[datum] || {};
+    const rij = {};
+    for (const sleutel of new Set([...Object.keys(a), ...Object.keys(b)])) {
+      const l = normNotitie(a[sleutel]);
+      const r = normNotitie(b[sleutel]);
+      rij[sleutel] = !l ? r : !r ? l : (r.m > l.m ? r : l);
+    }
+    uit[datum] = rij;
+  }
+  return uit;
+}
+
+async function haalOp() {
+  const antwoord = await api("/rest/v1/rooster_data?select=*&user_id=eq." + gebruikerId(), { method: "GET" });
+  if (!antwoord.ok) throw new Error("ophalen mislukt (" + antwoord.status + ")");
+  const rijen = await antwoord.json();
+  return rijen[0] || null;
+}
+
+async function zetWeg() {
+  const antwoord = await api("/rest/v1/rooster_data", {
+    method: "POST",
+    headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
+    body: JSON.stringify({
+      user_id: gebruikerId(), rooster, notities, leerkrachten, meta,
+      bijgewerkt: new Date().toISOString()
+    })
+  });
+  if (!antwoord.ok) throw new Error("opslaan mislukt (" + antwoord.status + ")");
+}
+
+async function synchroniseer(stil) {
+  if (!syncIngesteld() || !ingelogd() || bezigMetSync) return false;
+  bezigMetSync = true;
+  syncFout = "";
+  tekenSyncSheet();
+  try {
+    const extern = await haalOp();
+    if (extern) {
+      notities = voegNotitiesSamen(notities, extern.notities || {});
+      const em = extern.meta || {};
+      if ((em.roosterM || 0) > (meta.roosterM || 0) && extern.rooster) {
+        rooster = extern.rooster;
+        meta.roosterM = em.roosterM;
+      }
+      if ((em.leerkrachtenM || 0) > (meta.leerkrachtenM || 0) && extern.leerkrachten) {
+        leerkrachten = extern.leerkrachten;
+        meta.leerkrachtenM = em.leerkrachtenM;
+      }
+      schoonNotities();
+      bewaarAlles();
+    }
+    await zetWeg();
+    laatsteSync = Date.now();
+    schrijf(K_LAATSTE_SYNC, laatsteSync);
+    if (!stil) toast("Gesynchroniseerd");
+    if (!sheetOpen()) teken();
+    return true;
+  } catch (e) {
+    syncFout = e.message || "onbekende fout";
+    if (!stil) toast("Synchroniseren mislukt");
+    return false;
+  } finally {
+    bezigMetSync = false;
+    tekenSyncSheet();
+    tekenSyncSamenvatting();
+  }
+}
+
+/* na een wijziging niet meteen, maar even wachten tot je klaar bent met typen */
+function planSync() {
+  try {
+    if (!syncIngesteld() || !ingelogd()) return;
+    clearTimeout(syncTimer);
+    syncTimer = setTimeout(() => synchroniseer(true), 2000);
+  } catch (e) {
+    /* de sync-laag is nog niet geladen (bijv. tijdens het opstarten) */
+  }
+}
+
+function syncOmschrijving() {
+  if (!syncIngesteld()) return "Nog niet ingesteld — alles blijft op dit apparaat";
+  if (!ingelogd()) return "Niet ingelogd — alles blijft op dit apparaat";
+  if (bezigMetSync) return "Bezig met synchroniseren…";
+  if (syncFout) return "Laatste poging mislukt: " + syncFout;
+  if (!laatsteSync) return "Ingelogd als " + gebruikerEmail();
+  const datum = new Date(laatsteSync);
+  return "Bijgewerkt om " + String(datum.getHours()).padStart(2, "0") + ":" + String(datum.getMinutes()).padStart(2, "0");
+}
+
+function tekenSyncSamenvatting() {
+  const el = document.getElementById("syncSamenvatting");
+  if (el) el.textContent = syncOmschrijving();
+}
+
+const syncSheet = document.getElementById("syncSheet");
+
+function tekenSyncSheet() {
+  if (!syncSheet.classList.contains("open")) return;
+  document.getElementById("syncUitleg").textContent = syncOmschrijving();
+  const vak = document.getElementById("syncInhoud");
+  vak.innerHTML = "";
+
+  if (!syncIngesteld()) {
+    const uitleg = document.createElement("p");
+    uitleg.className = "leeg";
+    uitleg.textContent = "Er is nog geen project ingesteld. Zolang dat zo is, staan je notities alleen op dit apparaat.";
+    vak.appendChild(uitleg);
+    return;
+  }
+
+  if (!ingelogd()) {
+    const veld = document.createElement("div");
+    veld.className = "veld";
+    const label = document.createElement("label");
+    label.setAttribute("for", "syncEmail");
+    label.textContent = "E-mailadres";
+    const invoer = document.createElement("input");
+    invoer.type = "text";
+    invoer.id = "syncEmail";
+    invoer.placeholder = "jij@school.nl";
+    invoer.autocapitalize = "off";
+    invoer.spellcheck = false;
+    veld.appendChild(label);
+    veld.appendChild(invoer);
+    vak.appendChild(veld);
+
+    const knop = document.createElement("button");
+    knop.className = "knop primair";
+    knop.style.width = "100%";
+    knop.textContent = "Stuur mij een inloglink";
+    knop.onclick = async () => {
+      const email = invoer.value.trim();
+      if (!email || email.indexOf("@") === -1) { toast("Vul een e-mailadres in"); return; }
+      knop.disabled = true;
+      knop.textContent = "Versturen…";
+      const gelukt = await stuurInlogLink(email);
+      knop.disabled = false;
+      knop.textContent = "Stuur mij een inloglink";
+      toast(gelukt ? "Link verstuurd — check je mail" : "Versturen mislukt");
+    };
+    vak.appendChild(knop);
+
+    const noot = document.createElement("p");
+    noot.className = "voet";
+    noot.textContent = "Je krijgt een mail met een link. Klik die op dit apparaat aan; er is geen wachtwoord nodig.";
+    vak.appendChild(noot);
+    return;
+  }
+
+  const nu = document.createElement("button");
+  nu.className = "menuknop";
+  nu.innerHTML = "Nu synchroniseren";
+  nu.onclick = () => synchroniseer(false);
+  vak.appendChild(nu);
+
+  const uit = document.createElement("button");
+  uit.className = "menuknop";
+  uit.innerHTML = "Uitloggen op dit apparaat<small>Je notities blijven gewoon op dit apparaat staan.</small>";
+  uit.onclick = () => {
+    if (!confirm("Uitloggen? Dit apparaat synchroniseert dan niet meer.")) return;
+    sessie = null;
+    schrijf(K_SESSIE, null);
+    tekenSyncSheet();
+    tekenSyncSamenvatting();
+  };
+  vak.appendChild(uit);
+}
+
+document.getElementById("naarSync").onclick = () => {
+  menuSheet.classList.remove("open");
+  toon(syncSheet);
+  tekenSyncSheet();
+};
+document.getElementById("syncSluit").onclick = sluit;
+
+/* =========================================================
+   10. SWIPE tussen dagen
    ========================================================= */
 let startX = 0, startY = 0, volgen = false;
-const sheetOpen = () => [sheet, overdrachtSheet, menuSheet, lkSheet].some(s => s.classList.contains("open"));
+const sheetOpen = () => [sheet, overdrachtSheet, menuSheet, lkSheet, document.getElementById("syncSheet")].some(s => s.classList.contains("open"));
 document.addEventListener("touchstart", e => {
   if (sheetOpen()) return;
   startX = e.touches[0].clientX; startY = e.touches[0].clientY; volgen = true;
@@ -1246,18 +1627,35 @@ document.addEventListener("touchend", e => {
 }, { passive: true });
 
 /* =========================================================
-   10. LEVEND HOUDEN
+   11. LEVEND HOUDEN
    ========================================================= */
+vangSessieUitUrl();
 teken();
+if (syncIngesteld() && ingelogd()) synchroniseer(true);
 setInterval(() => { if (!sheetOpen()) teken(); }, 30000);
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible" && !sheetOpen()) {
     const vandaag = huidigeDagSleutel();
     if (vandaag && vandaag !== actieveDag) { actieveDag = vandaag; eersteKeer = true; }
     teken();
+    synchroniseer(true);
   }
 });
 window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { if (!sheetOpen()) teken(); });
+window.matchMedia("(min-width: 900px)").addEventListener("change", () => teken());
+
+/* pijltjestoetsen op een smal venster: van dag wisselen */
+document.addEventListener("keydown", e => {
+  if (sheetOpen() || breed()) return;
+  if (e.target.closest && e.target.closest("input, textarea")) return;
+  if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+  const i = DAGEN.findIndex(d => d.sleutel === actieveDag);
+  const nieuw = e.key === "ArrowRight" ? i + 1 : i - 1;
+  if (nieuw < 0 || nieuw >= DAGEN.length) return;
+  actieveDag = DAGEN[nieuw].sleutel;
+  eersteKeer = false;
+  teken();
+});
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {

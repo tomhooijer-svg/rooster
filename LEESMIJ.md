@@ -25,12 +25,77 @@ is te installeren op het beginscherm van je iPhone, en heeft:
   "Overdracht voor Marieke (groep 2C)".
 - **Rooster bewerken in de app**: tijd, wie/waar, activiteit, en de leerlingen met hun
   groep. Blokken toevoegen of verwijderen, en via ⚙︎ alles terugzetten naar het origineel.
-- Wisselen van dag via de tabs Di/Do/Vr of door te swipen; kleurcodes per activiteit.
+- Wisselen van dag via de tabs Di/Do/Vr, door te swipen, of met de pijltjestoetsen.
+- **Breed scherm**: op een venster vanaf 900 px breed (je Mac) staan dinsdag, donderdag
+  en vrijdag als drie kolommen naast elkaar. Smaller wordt het automatisch weer één dag
+  met tabs.
 
 Notities en wijzigingen staan in `localStorage` op je telefoon — ze blijven bewaard,
-maar staan alleen op dat toestel (niet in de cloud, geen back-up). Er is bewust geen
-koppeling met Microsoft Teams: dat zou een app-registratie in Azure AD en goedkeuring
-van ICT vragen. De deelknop levert hetzelfde resultaat met één tik extra.
+maar staan alleen op dat toestel (niet in de cloud, geen back-up). Wil je ze op meerdere
+apparaten, zie "Synchroniseren" hieronder. Er is bewust geen koppeling met Microsoft
+Teams: dat zou een app-registratie in Azure AD en goedkeuring van ICT vragen. De
+deelknop levert hetzelfde resultaat met één tik extra.
+
+## Synchroniseren tussen iPhone en Mac
+
+Standaard staan notities alleen op het apparaat waar je ze typt. Wil je ze op allebei,
+vul dan bovenin `index.html` het blok `SYNC` in met de gegevens van een eigen (gratis)
+Supabase-project. Zolang die velden leeg zijn, blijft alles lokaal.
+
+**Project aanmaken (éénmalig, ongeveer 5 minuten)**
+
+1. Ga naar supabase.com en log in — dat kan met je GitHub-account.
+2. **New project**. Naam: `rooster`. Kies bij Region **Frankfurt (eu-central-1)**, zodat de
+   gegevens binnen de EU blijven. Verzin een databasewachtwoord en bewaar dat ergens; je
+   hebt het voor deze app niet nodig, wel als je ooit zelf in de database wilt kijken.
+3. Open links de **SQL Editor**, plak onderstaande query en klik Run:
+
+```sql
+create table rooster_data (
+  user_id      uuid primary key references auth.users on delete cascade,
+  rooster      jsonb,
+  notities     jsonb,
+  leerkrachten jsonb,
+  meta         jsonb,
+  bijgewerkt   timestamptz default now()
+);
+
+alter table rooster_data enable row level security;
+
+create policy "eigen rij lezen"    on rooster_data for select using (auth.uid() = user_id);
+create policy "eigen rij maken"    on rooster_data for insert with check (auth.uid() = user_id);
+create policy "eigen rij wijzigen" on rooster_data for update using (auth.uid() = user_id)
+                                                          with check (auth.uid() = user_id);
+```
+
+   Die laatste regels (row level security) zijn wat je notities afschermt: alleen jouw
+   eigen ingelogde account kan bij jouw rij.
+
+4. Ga naar **Authentication → URL Configuration**. Zet bij *Site URL* en bij *Redirect URLs*
+   het adres van de app: `https://tomhooijer-svg.github.io/rooster/`. Zonder dit werkt de
+   inloglink uit je mail niet.
+5. Ga naar **Project Settings → API** en kopieer de **Project URL** en de **anon public**
+   key. Die twee zet je in het `SYNC`-blok bovenin `index.html`.
+
+De anon key is bedoeld om openbaar te zijn; die mag dus gewoon in de repo staan. De
+**service_role** key niet — die geeft toegang tot alles en hoort nergens in de app.
+
+**Gebruiken**: open de app, ga naar ⚙︎ → Synchroniseren, vul je e-mailadres in en klik op
+"Stuur mij een inloglink". Je krijgt een mail met een link; die open je op het apparaat
+waar je bent. Geen wachtwoord nodig. Herhaal dit één keer op je Mac en één keer op je
+iPhone, daarna gaat het vanzelf: bij het openen van de app, en telkens een paar seconden
+nadat je iets hebt gewijzigd.
+
+Bij een conflict wint per notitie de laatste wijziging. Een notitie die je op je Mac wist,
+verdwijnt dus ook op je iPhone. Het rooster zelf (tijden, leerlingen) en de leerkracht-
+namen worden als geheel overgenomen van het apparaat waar ze het laatst zijn aangepast.
+
+Twee dingen om te weten: op het gratis abonnement pauzeert Supabase een project na een
+week zonder gebruik — dan moet je het in het dashboard even hervatten. En het versturen
+van inlogmails is beperkt tot een paar per uur, wat voor incidenteel inloggen ruim genoeg
+is. Verder: hiermee staan notities over leerlingen bij een externe partij. Voor school
+hoort daar formeel een verwerkersovereenkomst bij; dat is iets om met je directie of ICT
+af te stemmen.
 
 ## Bestanden
 
