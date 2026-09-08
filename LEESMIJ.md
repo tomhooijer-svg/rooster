@@ -8,13 +8,29 @@ is te installeren op het beginscherm van je iPhone, en heeft:
 - **Live "nu"-indicator**: het huidige blok krijgt een rode rand + NU-label, er loopt een
   rode lijn met de klok mee, en blokken die voorbij zijn worden grijs. Bovenin staat een
   balkje met "Nu bezig … nog 18 min · daarna …".
-- **Notitie per blok**: tik een blok aan en typ bijv. "Jaap-Jan ziek, i.p.v. hem Mees".
-- **Rooster bewerken in de app**: tijd, wie/waar en activiteit aanpassen, blokken
-  toevoegen of verwijderen. Via ⚙︎ rechtsboven zet je alles terug naar het origineel.
-- Wisselen van dag via de tabs Di/Do/Vr of door te swipen.
+- **Notitie per leerling**: tik een blok aan en typ per kind een notitie. Bij een blok
+  met kinderen uit twee groepen (Maxima groep 5, Luca groep 6) heeft elk kind een eigen
+  veld, zodat een notitie nooit bij de verkeerde leerkracht belandt. Notities horen bij
+  een datum: wat je dinsdag 8 september typt, staat volgende week dinsdag niet meer in de
+  weergave, maar blijft wel in de overdracht van die week terug te vinden.
+- **Blok-notitie** bij blokken zonder leerlingen (verbreding, voorbereiding, pauze). Die
+  is alleen voor jezelf en gaat nooit mee in een overdracht.
+- **Overdracht** (het 📤-knopje rechtsboven): verzamelt de notities van de week en
+  groepeert ze per groep. Per groep krijg je een kant-en-klaar tekstblok met een
+  Delen-knop, die de iOS-deelkaart opent — daarmee stuur je het met één tik naar Teams,
+  mail of Berichten. Met de pijltjes blader je naar eerdere weken. Het bolletje op het
+  knopje toont hoeveel groepen deze week iets te ontvangen hebben.
+- **Direct delen** kan ook per kind, via de Delen-knop naast de notitie.
+- **Leerkracht per groep** (via ⚙︎): vul je een naam in, dan begint de overdracht met
+  "Overdracht voor Marieke (groep 2C)".
+- **Rooster bewerken in de app**: tijd, wie/waar, activiteit, en de leerlingen met hun
+  groep. Blokken toevoegen of verwijderen, en via ⚙︎ alles terugzetten naar het origineel.
+- Wisselen van dag via de tabs Di/Do/Vr of door te swipen; kleurcodes per activiteit.
 
 Notities en wijzigingen staan in `localStorage` op je telefoon — ze blijven bewaard,
-maar staan alleen op dat toestel (niet in de cloud, geen back-up).
+maar staan alleen op dat toestel (niet in de cloud, geen back-up). Er is bewust geen
+koppeling met Microsoft Teams: dat zou een app-registratie in Azure AD en goedkeuring
+van ICT vragen. De deelknop levert hetzelfde resultaat met één tik extra.
 
 ## Bestanden
 
@@ -61,3 +77,7 @@ Twee dingen om te weten:
 
 Kleuren per activiteit staan in `SOORTEN`; nieuwe activiteiten zonder kleur krijgen
 gewoon geen kleurtje, dat werkt verder prima.
+
+Bij elk blok staat een `leerlingen`-lijst met `naam` en `groep`. Die bepaalt naar welke
+leerkracht een notitie gaat. Een leeg lijstje betekent: geen overdracht, alleen een
+blok-notitie voor jezelf. De naam onder de overdracht komt uit `AFZENDER`.

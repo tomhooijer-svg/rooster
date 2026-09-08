@@ -67,15 +67,20 @@
     -webkit-backdrop-filter:saturate(180%) blur(14px);
     border-bottom:1px solid var(--line);
   }
-  .titelrij{display:flex; align-items:center; gap:10px}
+  .titelrij{display:flex; align-items:center; gap:8px}
   h1{font-size:22px; font-weight:700; letter-spacing:-.02em; margin:0; flex:1}
   h1 small{display:block; font-size:13px; font-weight:500; color:var(--ink-faint); letter-spacing:0}
   .icoonknop{
     width:38px; height:38px; flex:none; border:0; border-radius:12px;
-    background:var(--card); box-shadow:var(--shadow); font-size:18px;
-    display:grid; place-items:center; cursor:pointer;
+    background:var(--card); box-shadow:var(--shadow); font-size:17px;
+    display:grid; place-items:center; cursor:pointer; position:relative;
   }
   .icoonknop:active{transform:scale(.94)}
+  .icoonknop .telling{
+    position:absolute; top:-5px; right:-5px; min-width:18px; height:18px; padding:0 4px;
+    border-radius:9px; background:var(--accent); color:#fff;
+    font-size:11px; font-weight:700; line-height:18px; text-align:center;
+  }
 
   nav{display:flex; gap:6px; padding:12px 0 10px}
   nav button{
@@ -131,6 +136,7 @@
     background:var(--accent-soft); color:var(--ink);
     font-size:14.5px; line-height:1.35; white-space:pre-wrap; overflow-wrap:anywhere;
   }
+  .notitie b{font-weight:700}
   .blok.voorbij{opacity:.42}
   .blok.nu{
     border-left-color:var(--nu); border-left-width:5px;
@@ -185,9 +191,39 @@
     -webkit-appearance:none; appearance:none;
   }
   input:focus, textarea:focus{outline:none; border-color:var(--accent)}
-  textarea{min-height:96px; resize:vertical; line-height:1.4}
+  textarea{min-height:80px; resize:vertical; line-height:1.4}
   .tijdrij{display:flex; gap:10px}
   .tijdrij .veld{flex:1}
+
+  /* notitie per leerling */
+  .kindveld{margin-bottom:16px}
+  .kindkop{display:flex; align-items:baseline; gap:8px; margin-bottom:6px}
+  .kindkop .naam{font-weight:700; font-size:16px}
+  .kindkop .groep{
+    font-size:12.5px; font-weight:700; color:var(--accent);
+    background:var(--accent-soft); padding:2px 8px; border-radius:999px;
+  }
+  .kindkop .geengroep{background:transparent; color:var(--ink-faint); padding:0}
+  .kindkop .deel{
+    margin-left:auto; border:0; background:transparent; color:var(--accent);
+    font-weight:600; font-size:14.5px; cursor:pointer; padding:2px 0;
+  }
+
+  /* leerlingen bewerken */
+  .lrij{display:flex; gap:8px; margin-bottom:8px; align-items:center}
+  .lrij input{padding:10px 11px; font-size:16px}
+  .lrij .lnaam{flex:2}
+  .lrij .lgroep{flex:1; min-width:80px}
+  .lrij .weg{
+    flex:none; width:38px; height:38px; border:0; border-radius:10px;
+    background:var(--card); box-shadow:var(--shadow); color:#d9412a;
+    font-size:18px; cursor:pointer;
+  }
+  .mini{
+    border:1.5px dashed var(--line); background:transparent; color:var(--ink-soft);
+    padding:10px 14px; border-radius:12px; font-weight:600; cursor:pointer; width:100%;
+  }
+
   details.bewerk{margin:4px 0 6px; border-top:1px solid var(--line); padding-top:14px}
   details.bewerk summary{
     font-weight:600; color:var(--accent); cursor:pointer; list-style:none;
@@ -212,6 +248,37 @@
   }
   .menuknop small{display:block; color:var(--ink-faint); font-size:13.5px; font-weight:400}
   .voet{margin-top:16px; text-align:center; font-size:12.5px; color:var(--ink-faint)}
+
+  /* ---------- overdracht ---------- */
+  .weekbalk{display:flex; align-items:center; gap:10px; margin-bottom:16px}
+  .weekbalk .pijl{
+    width:38px; height:38px; flex:none; border:0; border-radius:12px;
+    background:var(--card); box-shadow:var(--shadow); font-size:16px; cursor:pointer;
+  }
+  .weekbalk .pijl[disabled]{opacity:.35}
+  .weekbalk .weeklabel{flex:1; text-align:center; font-weight:600; font-size:15.5px}
+  .groepkaart{
+    background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:14px; margin-bottom:10px;
+  }
+  .groepkaart h3{margin:0 0 2px; font-size:17px}
+  .groepkaart .lk{color:var(--ink-faint); font-size:13.5px; margin-bottom:10px}
+  .groepkaart pre{
+    margin:0 0 12px; padding:11px 12px; border-radius:10px;
+    background:var(--bg); border:1px solid var(--line);
+    font:400 14px/1.45 ui-monospace, "SF Mono", Menlo, monospace;
+    white-space:pre-wrap; overflow-wrap:anywhere; max-height:230px; overflow-y:auto;
+  }
+  .groepkaart .knoppen{margin-top:0}
+  .groepkaart .knop{padding:12px; font-size:16px}
+
+  #toast{
+    position:fixed; left:50%; bottom:calc(28px + var(--safe-bottom)); transform:translate(-50%,20px);
+    background:#22242f; color:#fff; padding:11px 18px; border-radius:999px;
+    font-size:15px; font-weight:500; z-index:80; opacity:0; pointer-events:none;
+    transition:opacity .2s, transform .2s; box-shadow:0 8px 30px rgba(0,0,0,.3);
+  }
+  #toast.open{opacity:1; transform:translate(-50%,0)}
 </style>
 </head>
 <body>
@@ -219,6 +286,7 @@
 <header>
   <div class="titelrij">
     <h1>Rooster Tom<small id="datumregel">—</small></h1>
+    <button class="icoonknop" id="overdrachtKnop" aria-label="Overdracht">📤<span class="telling" id="overdrachtTelling" hidden></span></button>
     <button class="icoonknop" id="menuKnop" aria-label="Instellingen">⚙︎</button>
   </div>
   <nav id="tabs" role="tablist"></nav>
@@ -235,10 +303,7 @@
   <h2 id="sheetTitel">Blok</h2>
   <div class="subkop" id="sheetSub"></div>
 
-  <div class="veld">
-    <label for="notitie">Notitie</label>
-    <textarea id="notitie" placeholder="Bijv. Jaap-Jan ziek, i.p.v. hem Mees" enterkeyhint="done"></textarea>
-  </div>
+  <div id="notitieVelden"></div>
 
   <details class="bewerk" id="bewerkVak">
     <summary>Blok bewerken</summary>
@@ -250,7 +315,12 @@
     <div class="veld"><label for="wat">Wat</label><input type="text" id="wat" placeholder="Bijv. Taalklas" list="soorten">
       <datalist id="soorten"></datalist>
     </div>
-    <button class="knop gevaar" id="verwijderKnop">Dit blok verwijderen</button>
+    <div class="veld">
+      <label>Leerlingen &amp; groep</label>
+      <div id="leerlingRijen"></div>
+      <button class="mini" id="leerlingToevoegen" type="button">+ Leerling toevoegen</button>
+    </div>
+    <button class="knop gevaar" id="verwijderKnop" type="button">Dit blok verwijderen</button>
   </details>
 
   <div class="knoppen">
@@ -259,67 +329,112 @@
   </div>
 </section>
 
+<!-- overdracht-sheet -->
+<section class="sheet" id="overdrachtSheet" role="dialog" aria-modal="true" aria-label="Overdracht">
+  <div class="greep"></div>
+  <h2>Overdracht</h2>
+  <div class="subkop">Per groep, alleen de notities die bij die leerkracht horen.</div>
+  <div class="weekbalk">
+    <button class="pijl" id="weekVorige" aria-label="Vorige week">◀</button>
+    <div class="weeklabel" id="weekLabel">—</div>
+    <button class="pijl" id="weekVolgende" aria-label="Volgende week">▶</button>
+  </div>
+  <div id="overdrachtLijst"></div>
+  <div class="knoppen"><button class="knop" id="overdrachtSluit">Sluiten</button></div>
+  <div class="voet">Blok-notities zonder leerling blijven privé en gaan nooit mee.</div>
+</section>
+
 <!-- menu-sheet -->
 <section class="sheet" id="menuSheet" role="dialog" aria-modal="true" aria-label="Instellingen">
   <div class="greep"></div>
   <h2>Instellingen</h2>
   <div class="subkop" id="menuStatus"></div>
-  <button class="menuknop" id="resetRooster">Rooster terugzetten naar origineel<small>Alle wijzigingen in tijden, namen en activiteiten worden ongedaan gemaakt. Notities blijven staan.</small></button>
-  <button class="menuknop" id="wisNotities">Alle notities wissen<small>Verwijdert de notities bij alle blokken.</small></button>
+  <button class="menuknop" id="naarLeerkrachten">Leerkracht per groep<small>Namen die boven de overdracht komen te staan.</small></button>
+  <button class="menuknop" id="resetRooster">Rooster terugzetten naar origineel<small>Tijden, namen, leerlingen en activiteiten terug naar het basisrooster. Notities blijven staan.</small></button>
+  <button class="menuknop" id="wisNotities">Alle notities wissen<small>Verwijdert de notities van alle weken, ook de oude.</small></button>
   <div class="knoppen"><button class="knop" id="menuSluit">Sluiten</button></div>
-  <div class="voet">Rooster Tom · werkt offline</div>
+  <div class="voet">Rooster Tom · werkt offline · notities staan alleen op dit toestel</div>
 </section>
+
+<!-- leerkrachten-sheet -->
+<section class="sheet" id="lkSheet" role="dialog" aria-modal="true" aria-label="Leerkrachten">
+  <div class="greep"></div>
+  <h2>Leerkracht per groep</h2>
+  <div class="subkop">Optioneel. De naam komt boven de overdracht te staan.</div>
+  <div id="lkVelden"></div>
+  <div class="knoppen"><button class="knop primair" id="lkSluit">Klaar</button></div>
+</section>
+
+<div id="toast" role="status" aria-live="polite"></div>
 
 <script>
 /* =========================================================
    1. ROOSTERDATA — hier pas je het basisrooster aan
+   leerlingen: bepaalt welke leerkracht welke notitie krijgt.
+   Een blok zonder leerlingen krijgt één blok-notitie, die
+   nooit in een overdracht terechtkomt.
    ========================================================= */
 const BASIS_ROOSTER = {
   dinsdag: [
-    { tijd: "8.30 - 9.00",   wieWaar: "Jaap-Jan 8Y",                        wat: "EL Rekenen" },
-    { tijd: "9.00 - 9.30",   wieWaar: "Maxima en Luca (groep 5 en 6)",      wat: "EL Rekenen" },
-    { tijd: "9.30 - 10.00",  wieWaar: "Moos en Yula 2C",                    wat: "Zittenblijvers" },
-    { tijd: "10.00 - 10.30", wieWaar: "Voorbereiding verbreding groep 1",   wat: "" },
-    { tijd: "10.30 - 11.00", wieWaar: "Verbreding groep 1",                 wat: "" },
-    { tijd: "11.00 - 11.40", wieWaar: "Verbreding groep 1",                 wat: "" },
-    { tijd: "11.40 - 12.00", wieWaar: "Yahya 1C",                           wat: "Taalklas" },
-    { tijd: "12.00 - 12.30", wieWaar: "Eten in groep 2C",                   wat: "" },
-    { tijd: "12.30 - 13.00", wieWaar: "Pauze",                              wat: "" },
-    { tijd: "13.00 - 13.30", wieWaar: "Evi en Esmay 2B",                    wat: "Zittenblijvers" },
-    { tijd: "13.30 - 14.00", wieWaar: "Gabriel & Zakariya 2C",              wat: "Taalklas" },
-    { tijd: "14.00 - 14.10", wieWaar: "Liam 1A",                            wat: "VVE" }
+    { tijd:"8.30 - 9.00",   wieWaar:"Jaap-Jan 8Y",                      wat:"EL Rekenen",
+      leerlingen:[{naam:"Jaap-Jan", groep:"8Y"}] },
+    { tijd:"9.00 - 9.30",   wieWaar:"Maxima en Luca (groep 5 en 6)",    wat:"EL Rekenen",
+      leerlingen:[{naam:"Maxima", groep:"5"},{naam:"Luca", groep:"6"}] },
+    { tijd:"9.30 - 10.00",  wieWaar:"Moos en Yula 2C",                  wat:"Zittenblijvers",
+      leerlingen:[{naam:"Moos", groep:"2C"},{naam:"Yula", groep:"2C"}] },
+    { tijd:"10.00 - 10.30", wieWaar:"Voorbereiding verbreding groep 1", wat:"", leerlingen:[] },
+    { tijd:"10.30 - 11.00", wieWaar:"Verbreding groep 1",               wat:"", leerlingen:[] },
+    { tijd:"11.00 - 11.40", wieWaar:"Verbreding groep 1",               wat:"", leerlingen:[] },
+    { tijd:"11.40 - 12.00", wieWaar:"Yahya 1C",                         wat:"Taalklas",
+      leerlingen:[{naam:"Yahya", groep:"1C"}] },
+    { tijd:"12.00 - 12.30", wieWaar:"Eten in groep 2C",                 wat:"", leerlingen:[] },
+    { tijd:"12.30 - 13.00", wieWaar:"Pauze",                            wat:"", leerlingen:[] },
+    { tijd:"13.00 - 13.30", wieWaar:"Evi en Esmay 2B",                  wat:"Zittenblijvers",
+      leerlingen:[{naam:"Evi", groep:"2B"},{naam:"Esmay", groep:"2B"}] },
+    { tijd:"13.30 - 14.00", wieWaar:"Gabriel & Zakariya 2C",            wat:"Taalklas",
+      leerlingen:[{naam:"Gabriel", groep:"2C"},{naam:"Zakariya", groep:"2C"}] },
+    { tijd:"14.00 - 14.10", wieWaar:"Liam 1A",                          wat:"VVE",
+      leerlingen:[{naam:"Liam", groep:"1A"}] }
   ],
   donderdag: [
-    { tijd: "8.30 - 9.15",   wieWaar: "Charlie en Mark (8Y en 7A)",         wat: "EL Rekenen" },
-    { tijd: "9.15 - 9.30",   wieWaar: "Voorbereiding verbreding groep 2",   wat: "" },
-    { tijd: "9.30 - 10.00",  wieWaar: "Voorbereiding verbreding groep 2",   wat: "" },
-    { tijd: "10.00 - 10.30", wieWaar: "Verbreding groep 2",                 wat: "" },
-    { tijd: "10.30 - 11.00", wieWaar: "Verbreding groep 2",                 wat: "Taalklas" },
-    { tijd: "11.00 - 11.15", wieWaar: "Mia 1B",                             wat: "VVE" },
-    { tijd: "11.15 - 11.30", wieWaar: "Mimi 1C",                            wat: "VVE" },
-    { tijd: "11.30 - 12.00", wieWaar: "Daan 2C",                            wat: "Extra ondersteuning" },
-    { tijd: "12.00 - 12.30", wieWaar: "Eten met 2C",                        wat: "" },
-    { tijd: "12.30 - 13.00", wieWaar: "Pauze",                              wat: "" },
-    { tijd: "13.00 - 13.30", wieWaar: "Amalia en Johan (2A en 2C)",         wat: "Taalklas" },
-    { tijd: "13.30 - 14.00", wieWaar: "Evi en Esmay (2B)",                  wat: "VVE" },
-    { tijd: "14.00 - 14.30", wieWaar: "Viv en Maura (2A en 2B)",            wat: "VVE" }
+    { tijd:"8.30 - 9.15",   wieWaar:"Charlie en Mark (8Y en 7A)",       wat:"EL Rekenen",
+      leerlingen:[{naam:"Charlie", groep:"8Y"},{naam:"Mark", groep:"7A"}] },
+    { tijd:"9.15 - 9.30",   wieWaar:"Voorbereiding verbreding groep 2", wat:"", leerlingen:[] },
+    { tijd:"9.30 - 10.00",  wieWaar:"Voorbereiding verbreding groep 2", wat:"", leerlingen:[] },
+    { tijd:"10.00 - 10.30", wieWaar:"Verbreding groep 2",               wat:"", leerlingen:[] },
+    { tijd:"10.30 - 11.00", wieWaar:"Verbreding groep 2",               wat:"Taalklas", leerlingen:[] },
+    { tijd:"11.00 - 11.15", wieWaar:"Mia 1B",                           wat:"VVE",
+      leerlingen:[{naam:"Mia", groep:"1B"}] },
+    { tijd:"11.15 - 11.30", wieWaar:"Mimi 1C",                          wat:"VVE",
+      leerlingen:[{naam:"Mimi", groep:"1C"}] },
+    { tijd:"11.30 - 12.00", wieWaar:"Daan 2C",                          wat:"Extra ondersteuning",
+      leerlingen:[{naam:"Daan", groep:"2C"}] },
+    { tijd:"12.00 - 12.30", wieWaar:"Eten met 2C",                      wat:"", leerlingen:[] },
+    { tijd:"12.30 - 13.00", wieWaar:"Pauze",                            wat:"", leerlingen:[] },
+    { tijd:"13.00 - 13.30", wieWaar:"Amalia en Johan (2A en 2C)",       wat:"Taalklas",
+      leerlingen:[{naam:"Amalia", groep:"2A"},{naam:"Johan", groep:"2C"}] },
+    { tijd:"13.30 - 14.00", wieWaar:"Evi en Esmay (2B)",                wat:"VVE",
+      leerlingen:[{naam:"Evi", groep:"2B"},{naam:"Esmay", groep:"2B"}] },
+    { tijd:"14.00 - 14.30", wieWaar:"Viv en Maura (2A en 2B)",          wat:"VVE",
+      leerlingen:[{naam:"Viv", groep:"2A"},{naam:"Maura", groep:"2B"}] }
   ],
   vrijdag: [
-    { tijd: "12.00 - 12.30", wieWaar: "Pleinwacht",                         wat: "" },
-    { tijd: "12.30 - 13.00", wieWaar: "Pauze",                              wat: "" },
-    { tijd: "13.00 - 13.30", wieWaar: "?",                                  wat: "" },
-    { tijd: "13.30 - 14.00", wieWaar: "?",                                  wat: "" },
-    { tijd: "14.00 - 14.30", wieWaar: "?",                                  wat: "" }
+    { tijd:"12.00 - 12.30", wieWaar:"Pleinwacht", wat:"", leerlingen:[] },
+    { tijd:"12.30 - 13.00", wieWaar:"Pauze",      wat:"", leerlingen:[] },
+    { tijd:"13.00 - 13.30", wieWaar:"?",          wat:"", leerlingen:[] },
+    { tijd:"13.30 - 14.00", wieWaar:"?",          wat:"", leerlingen:[] },
+    { tijd:"14.00 - 14.30", wieWaar:"?",          wat:"", leerlingen:[] }
   ]
 };
 
+const AFZENDER = "Tom";
+
 const DAGEN = [
-  { sleutel: "dinsdag",   kort: "Di", jsDag: 2 },
-  { sleutel: "donderdag", kort: "Do", jsDag: 4 },
-  { sleutel: "vrijdag",   kort: "Vr", jsDag: 5 }
+  { sleutel:"dinsdag",   kort:"Di", jsDag:2 },
+  { sleutel:"donderdag", kort:"Do", jsDag:4 },
+  { sleutel:"vrijdag",   kort:"Vr", jsDag:5 }
 ];
 
-/* kleur per soort activiteit: [kleur, zachte achtergrond licht, zachte achtergrond donker] */
 const SOORTEN = {
   "EL Rekenen":          ["#2f7d63", "#dff1ea", "#12332a"],
   "Zittenblijvers":      ["#a1622c", "#fbeadb", "#3a2413"],
@@ -331,9 +446,12 @@ const RUST = ["Pauze", "Eten"];
 
 /* =========================================================
    2. OPSLAG
+   notities = { "2026-09-08": { "<leerlingId of blokId>": "tekst" } }
    ========================================================= */
-const SLEUTEL_ROOSTER = "roosterTom.rooster.v1";
-const SLEUTEL_NOTITIES = "roosterTom.notities.v1";
+const K_ROOSTER = "roosterTom.rooster.v2";
+const K_NOTITIES = "roosterTom.notities.v2";
+const K_LEERKRACHTEN = "roosterTom.leerkrachten.v1";
+const K_NOTITIES_OUD = "roosterTom.notities.v1";
 
 function lees(sleutel, standaard) {
   try {
@@ -349,24 +467,32 @@ function schrijf(sleutel, waarde) {
 function maakBasis() {
   const uit = {};
   for (const d of DAGEN) {
-    uit[d.sleutel] = BASIS_ROOSTER[d.sleutel].map((b, i) => ({
-      id: d.kort.toLowerCase() + "-" + i, tijd: b.tijd, wieWaar: b.wieWaar, wat: b.wat
-    }));
+    uit[d.sleutel] = BASIS_ROOSTER[d.sleutel].map((b, i) => {
+      const blokId = d.kort.toLowerCase() + "-" + i;
+      return {
+        id: blokId, tijd: b.tijd, wieWaar: b.wieWaar, wat: b.wat,
+        leerlingen: (b.leerlingen || []).map((l, j) => ({
+          id: blokId + "-l" + j, naam: l.naam, groep: l.groep
+        }))
+      };
+    });
   }
   return uit;
 }
 
-let rooster = lees(SLEUTEL_ROOSTER, null) || maakBasis();
-let notities = lees(SLEUTEL_NOTITIES, {}) || {};
-/* vangnet tegen kapotte opslag */
+let rooster = lees(K_ROOSTER, null) || maakBasis();
+let notities = lees(K_NOTITIES, {}) || {};
+let leerkrachten = lees(K_LEERKRACHTEN, {}) || {};
 if (!rooster || !DAGEN.every(d => Array.isArray(rooster[d.sleutel]))) rooster = maakBasis();
+for (const d of DAGEN) for (const b of rooster[d.sleutel]) if (!Array.isArray(b.leerlingen)) b.leerlingen = [];
 
-const isAangepast = () => localStorage.getItem(SLEUTEL_ROOSTER) !== null;
-function bewaarRooster() { schrijf(SLEUTEL_ROOSTER, rooster); }
-function bewaarNotities() { schrijf(SLEUTEL_NOTITIES, notities); }
+const roosterAangepast = () => localStorage.getItem(K_ROOSTER) !== null;
+function bewaarRooster() { schrijf(K_ROOSTER, rooster); }
+function bewaarNotities() { schrijf(K_NOTITIES, notities); }
+function bewaarLeerkrachten() { schrijf(K_LEERKRACHTEN, leerkrachten); }
 
 /* =========================================================
-   3. TIJD-HULPJES
+   3. TIJD & DATUM
    ========================================================= */
 function ontleedTijd(tekst) {
   const m = String(tekst || "").match(/(\d{1,2})[.:](\d{2})\s*[-–—tot ]+\s*(\d{1,2})[.:](\d{2})/);
@@ -381,9 +507,34 @@ function vanInput(waarde) {
 }
 const nuMinuten = () => { const n = new Date(); return n.getHours() * 60 + n.getMinutes(); };
 
+const iso = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+function maandagVan(d) {
+  const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  x.setDate(x.getDate() - ((x.getDay() + 6) % 7));
+  return x;
+}
+function datumInWeek(maandag, jsDag) {
+  const x = new Date(maandag);
+  x.setDate(x.getDate() + ((jsDag + 6) % 7));
+  return x;
+}
+const MAANDEN = ["januari","februari","maart","april","mei","juni","juli","augustus","september","oktober","november","december"];
+const MAANDEN_KORT = ["jan","feb","mrt","apr","mei","jun","jul","aug","sep","okt","nov","dec"];
+const DAGNAMEN = ["zondag","maandag","dinsdag","woensdag","donderdag","vrijdag","zaterdag"];
+const kortDatum = d => d.getDate() + " " + MAANDEN[d.getMonth()];
+function weekBereik(maandag, maanden) {
+  const vr = datumInWeek(maandag, 5);
+  const eind = vr.getDate() + " " + maanden[vr.getMonth()];
+  const start = maandag.getMonth() === vr.getMonth()
+    ? String(maandag.getDate())
+    : maandag.getDate() + " " + maanden[maandag.getMonth()];
+  return start + " t/m " + eind;
+}
+const weekOmschrijving = maandag => "week van " + weekBereik(maandag, MAANDEN);
+const weekOmschrijvingKort = maandag => weekBereik(maandag, MAANDEN_KORT);
+
 function huidigeDagSleutel() {
-  const vandaag = new Date().getDay();
-  const dag = DAGEN.find(d => d.jsDag === vandaag);
+  const dag = DAGEN.find(d => d.jsDag === new Date().getDay());
   return dag ? dag.sleutel : null;
 }
 function eerstvolgendeDag() {
@@ -413,6 +564,38 @@ const elDatum = document.getElementById("datumregel");
 let actieveDag = huidigeDagSleutel() || eerstvolgendeDag();
 let eersteKeer = true;
 
+const dagInfo = sleutel => DAGEN.find(d => d.sleutel === sleutel);
+function datumVanActieveDag() {
+  return datumInWeek(maandagVan(new Date()), dagInfo(actieveDag).jsDag);
+}
+const notitiesOp = datumIso => notities[datumIso] || {};
+
+function zetNotitie(datumIso, sleutel, tekst) {
+  tekst = (tekst || "").trim();
+  if (tekst) {
+    notities[datumIso] = notities[datumIso] || {};
+    notities[datumIso][sleutel] = tekst;
+  } else if (notities[datumIso]) {
+    delete notities[datumIso][sleutel];
+    if (!Object.keys(notities[datumIso]).length) delete notities[datumIso];
+  }
+}
+
+/* eenmalige overname van de notities uit versie 1 (die waren niet gedateerd) */
+(function migreer() {
+  if (localStorage.getItem(K_NOTITIES) !== null) return;
+  const oud = lees(K_NOTITIES_OUD, null);
+  if (!oud || !Object.keys(oud).length) return;
+  const maandag = maandagVan(new Date());
+  for (const d of DAGEN) {
+    const datum = iso(datumInWeek(maandag, d.jsDag));
+    for (const blok of (rooster[d.sleutel] || [])) {
+      if (oud[blok.id]) zetNotitie(datum, blok.id, oud[blok.id]);
+    }
+  }
+  bewaarNotities();
+})();
+
 function sorteer(lijst) {
   return lijst.slice().sort((a, b) => {
     const sa = ontleedTijd(a.tijd).start, sb = ontleedTijd(b.tijd).start;
@@ -437,18 +620,15 @@ function tekenTabs() {
 }
 
 function tekenDatum() {
-  const nu = new Date();
-  const datum = nu.toLocaleDateString("nl-NL", { weekday: "long", day: "numeric", month: "long" });
-  const vandaag = huidigeDagSleutel();
-  const tekst = datum.charAt(0).toUpperCase() + datum.slice(1);
-  elDatum.textContent = actieveDag === vandaag
-    ? tekst
-    : tekst + " · je bekijkt " + actieveDag;
+  const datum = datumVanActieveDag();
+  const isVandaag = iso(datum) === iso(new Date());
+  const naam = DAGNAMEN[datum.getDay()];
+  elDatum.textContent = naam.charAt(0).toUpperCase() + naam.slice(1) + " " + kortDatum(datum) + (isVandaag ? " · vandaag" : "");
 }
 
 function tekenStatus() {
-  const vandaag = huidigeDagSleutel();
-  if (actieveDag !== vandaag) { elStatus.className = "status"; return; }
+  const isVandaag = iso(datumVanActieveDag()) === iso(new Date());
+  if (!isVandaag) { elStatus.className = "status"; return; }
   const blokken = sorteer(rooster[actieveDag]);
   const nu = nuMinuten();
   const huidig = blokken.find(b => { const t = ontleedTijd(b.tijd); return t.start != null && nu >= t.start && nu < t.eind; });
@@ -478,13 +658,32 @@ function tekenStatus() {
   elStatus.querySelector(".sub").textContent = sub;
 }
 
+function tekenOverdrachtTelling() {
+  const aantal = Object.keys(verzamelWeek(maandagVan(new Date()))).length;
+  const bolletje = document.getElementById("overdrachtTelling");
+  bolletje.textContent = aantal;
+  bolletje.hidden = aantal === 0;
+}
+
+function maakNuLijn(nu) {
+  const lijn = document.createElement("div");
+  lijn.className = "nulijn";
+  const label = document.createElement("span");
+  label.textContent = toonTijd(nu) + " nu";
+  lijn.appendChild(label);
+  return lijn;
+}
+
 function teken() {
   tekenTabs();
   tekenDatum();
   tekenStatus();
+  tekenOverdrachtTelling();
 
+  const datumIso = iso(datumVanActieveDag());
+  const dagNotities = notitiesOp(datumIso);
   const blokken = sorteer(rooster[actieveDag]);
-  const isVandaag = actieveDag === huidigeDagSleutel();
+  const isVandaag = datumIso === iso(new Date());
   const nu = nuMinuten();
   elLijst.innerHTML = "";
 
@@ -504,11 +703,7 @@ function teken() {
     const voorbij = isVandaag && t.eind != null && nu >= t.eind;
 
     if (isVandaag && !lijnGezet && t.start != null && t.start > nu) {
-      const lijn = document.createElement("div");
-      lijn.className = "nulijn";
-      lijn.innerHTML = "<span></span>";
-      lijn.querySelector("span").textContent = toonTijd(nu) + " nu";
-      elLijst.appendChild(lijn);
+      elLijst.appendChild(maakNuLijn(nu));
       lijnGezet = true;
     }
 
@@ -516,9 +711,12 @@ function teken() {
     kaart.type = "button";
     kaart.className = "blok" + (bezig ? " nu" : "") + (voorbij ? " voorbij" : "");
     const kleur = soortKleur(blok.wat);
-    if (kleur) kaart.style.setProperty("--soort", kleur.kleur);
-    if (kleur) kaart.style.setProperty("--soort-zacht", kleur.zacht);
-    else if (RUST.some(r => (blok.wieWaar || "").startsWith(r))) kaart.style.setProperty("--soort", "var(--ink-faint)");
+    if (kleur) {
+      kaart.style.setProperty("--soort", kleur.kleur);
+      kaart.style.setProperty("--soort-zacht", kleur.zacht);
+    } else if (RUST.some(r => (blok.wieWaar || "").startsWith(r))) {
+      kaart.style.setProperty("--soort", "var(--ink-faint)");
+    }
 
     const tijd = document.createElement("div");
     tijd.className = "tijd";
@@ -546,11 +744,22 @@ function teken() {
       tag.textContent = blok.wat;
       body.appendChild(tag);
     }
-    const notitie = notities[blok.id];
-    if (notitie) {
+
+    for (const l of blok.leerlingen) {
+      const tekst = dagNotities[l.id];
+      if (!tekst) continue;
       const n = document.createElement("div");
       n.className = "notitie";
-      n.textContent = "📝 " + notitie;
+      const naam = document.createElement("b");
+      naam.textContent = l.naam + ": ";
+      n.appendChild(naam);
+      n.appendChild(document.createTextNode(tekst));
+      body.appendChild(n);
+    }
+    if (dagNotities[blok.id]) {
+      const n = document.createElement("div");
+      n.className = "notitie";
+      n.textContent = "📝 " + dagNotities[blok.id];
       body.appendChild(n);
     }
 
@@ -561,13 +770,7 @@ function teken() {
     if (bezig) nuElement = kaart;
   }
 
-  if (isVandaag && !lijnGezet && blokken.length) {
-    const lijn = document.createElement("div");
-    lijn.className = "nulijn";
-    lijn.innerHTML = "<span></span>";
-    lijn.querySelector("span").textContent = toonTijd(nu) + " nu";
-    elLijst.appendChild(lijn);
-  }
+  if (isVandaag && !lijnGezet && blokken.length) elLijst.appendChild(maakNuLijn(nu));
 
   const plus = document.createElement("button");
   plus.type = "button";
@@ -584,22 +787,161 @@ function teken() {
 }
 
 /* =========================================================
-   5. SHEET (notitie + bewerken)
+   5. DELEN
+   ========================================================= */
+let toastTimer = null;
+function toast(tekst) {
+  const el = document.getElementById("toast");
+  el.textContent = tekst;
+  el.classList.add("open");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove("open"), 2400);
+}
+
+async function deel(tekst) {
+  if (navigator.share) {
+    try { await navigator.share({ text: tekst }); return; }
+    catch (e) { if (e && e.name === "AbortError") return; }
+  }
+  try { await navigator.clipboard.writeText(tekst); toast("Gekopieerd naar klembord"); return; }
+  catch (e) { /* val door naar prompt */ }
+  window.prompt("Kopieer de tekst:", tekst);
+}
+
+async function kopieer(tekst) {
+  try { await navigator.clipboard.writeText(tekst); toast("Gekopieerd naar klembord"); }
+  catch (e) { window.prompt("Kopieer de tekst:", tekst); }
+}
+
+/* =========================================================
+   6. OVERDRACHT
+   ========================================================= */
+function verzamelWeek(maandag) {
+  const perGroep = {};
+  for (const d of DAGEN) {
+    const datum = datumInWeek(maandag, d.jsDag);
+    const dagNotities = notitiesOp(iso(datum));
+    if (!Object.keys(dagNotities).length) continue;
+    for (const blok of sorteer(rooster[d.sleutel] || [])) {
+      for (const l of blok.leerlingen) {
+        const tekst = dagNotities[l.id];
+        if (!tekst) continue;
+        const groep = (l.groep || "").trim() || "Zonder groep";
+        (perGroep[groep] = perGroep[groep] || []).push({ datum, blok, leerling: l, tekst });
+      }
+    }
+  }
+  return perGroep;
+}
+
+function overdrachtTekst(groep, items, maandag) {
+  const lk = (leerkrachten[groep] || "").trim();
+  const regels = [];
+  regels.push(lk ? "Overdracht voor " + lk + " (groep " + groep + ")" : "Overdracht groep " + groep);
+  regels.push(weekOmschrijving(maandag));
+  let vorigeDag = null;
+  for (const item of items) {
+    const dagKey = iso(item.datum);
+    if (dagKey !== vorigeDag) {
+      const naam = DAGNAMEN[item.datum.getDay()];
+      regels.push("");
+      regels.push(naam.charAt(0).toUpperCase() + naam.slice(1) + " " + kortDatum(item.datum));
+      vorigeDag = dagKey;
+    }
+    const t = ontleedTijd(item.blok.tijd);
+    const tijd = t.start != null ? toonTijd(t.start) + "–" + toonTijd(t.eind) : item.blok.tijd;
+    const context = item.blok.wat ? tijd + ", " + item.blok.wat : tijd;
+    regels.push("• " + item.leerling.naam + " (" + context + "): " + item.tekst);
+  }
+  regels.push("");
+  regels.push("— " + AFZENDER);
+  return regels.join("\n");
+}
+
+let weekOffset = 0;
+
+function tekenOverdracht() {
+  const maandag = maandagVan(new Date());
+  maandag.setDate(maandag.getDate() + weekOffset * 7);
+  document.getElementById("weekLabel").textContent =
+    (weekOffset === 0 ? "Deze week · " : weekOffset === -1 ? "Vorige week · " : "") + weekOmschrijvingKort(maandag);
+  document.getElementById("weekVolgende").disabled = weekOffset >= 0;
+
+  const perGroep = verzamelWeek(maandag);
+  const groepen = Object.keys(perGroep).sort();
+  const lijst = document.getElementById("overdrachtLijst");
+  lijst.innerHTML = "";
+
+  if (!groepen.length) {
+    const leeg = document.createElement("p");
+    leeg.className = "leeg";
+    leeg.textContent = "Geen notities bij leerlingen in deze week.";
+    lijst.appendChild(leeg);
+    return;
+  }
+
+  for (const groep of groepen) {
+    const items = perGroep[groep];
+    const tekst = overdrachtTekst(groep, items, maandag);
+
+    const kaart = document.createElement("div");
+    kaart.className = "groepkaart";
+
+    const kop = document.createElement("h3");
+    kop.textContent = "Groep " + groep;
+    kaart.appendChild(kop);
+
+    const lk = document.createElement("div");
+    lk.className = "lk";
+    const naam = (leerkrachten[groep] || "").trim();
+    lk.textContent = (naam ? naam + " · " : "") + items.length + " notitie" + (items.length === 1 ? "" : "s");
+    kaart.appendChild(lk);
+
+    const pre = document.createElement("pre");
+    pre.textContent = tekst;
+    kaart.appendChild(pre);
+
+    const knoppen = document.createElement("div");
+    knoppen.className = "knoppen";
+    const deelKnop = document.createElement("button");
+    deelKnop.className = "knop primair";
+    deelKnop.textContent = navigator.share ? "Delen" : "Kopiëren";
+    deelKnop.onclick = () => deel(tekst);
+    knoppen.appendChild(deelKnop);
+    if (navigator.share) {
+      const kopieerKnop = document.createElement("button");
+      kopieerKnop.className = "knop";
+      kopieerKnop.textContent = "Kopiëren";
+      kopieerKnop.onclick = () => kopieer(tekst);
+      knoppen.appendChild(kopieerKnop);
+    }
+    kaart.appendChild(knoppen);
+
+    lijst.appendChild(kaart);
+  }
+}
+
+/* =========================================================
+   7. SHEET (notities + bewerken)
    ========================================================= */
 const overlay = document.getElementById("overlay");
 const sheet = document.getElementById("sheet");
+const overdrachtSheet = document.getElementById("overdrachtSheet");
 const menuSheet = document.getElementById("menuSheet");
-const veldNotitie = document.getElementById("notitie");
+const lkSheet = document.getElementById("lkSheet");
+const velden = document.getElementById("notitieVelden");
 const veldVan = document.getElementById("vanTijd");
 const veldTot = document.getElementById("totTijd");
 const veldWie = document.getElementById("wieWaar");
 const veldWat = document.getElementById("wat");
 const bewerkVak = document.getElementById("bewerkVak");
+const leerlingRijen = document.getElementById("leerlingRijen");
 
 document.getElementById("soorten").innerHTML =
   Object.keys(SOORTEN).map(s => '<option value="' + s + '">').join("");
 
-let huidigId = null;   // null = nieuw blok
+let huidigId = null;      // null = nieuw blok
+let huidigeDatum = null;  // datum waarop notities worden opgeslagen
 
 function vindBlok(id) {
   for (const d of DAGEN) {
@@ -609,31 +951,121 @@ function vindBlok(id) {
   return null;
 }
 
+function leerlingRij(naam, groep) {
+  const rij = document.createElement("div");
+  rij.className = "lrij";
+  const inNaam = document.createElement("input");
+  inNaam.type = "text"; inNaam.className = "lnaam"; inNaam.placeholder = "Naam"; inNaam.value = naam || "";
+  const inGroep = document.createElement("input");
+  inGroep.type = "text"; inGroep.className = "lgroep"; inGroep.placeholder = "Groep"; inGroep.value = groep || "";
+  const weg = document.createElement("button");
+  weg.type = "button"; weg.className = "weg"; weg.textContent = "×";
+  weg.setAttribute("aria-label", "Leerling verwijderen");
+  weg.onclick = () => rij.remove();
+  rij.appendChild(inNaam); rij.appendChild(inGroep); rij.appendChild(weg);
+  return rij;
+}
+
+function tekenNotitieVelden(blok) {
+  velden.innerHTML = "";
+  const dagNotities = notitiesOp(huidigeDatum);
+
+  if (!blok || !blok.leerlingen.length) {
+    const veld = document.createElement("div");
+    veld.className = "veld";
+    const label = document.createElement("label");
+    label.setAttribute("for", "notitie-blok");
+    label.textContent = "Notitie";
+    const ta = document.createElement("textarea");
+    ta.id = "notitie-blok";
+    ta.dataset.sleutel = blok ? blok.id : "nieuw";
+    ta.placeholder = "Alleen voor jezelf — gaat niet mee in een overdracht";
+    ta.value = blok ? (dagNotities[blok.id] || "") : "";
+    veld.appendChild(label);
+    veld.appendChild(ta);
+    velden.appendChild(veld);
+    return;
+  }
+
+  for (const l of blok.leerlingen) {
+    const wrap = document.createElement("div");
+    wrap.className = "kindveld";
+
+    const kop = document.createElement("div");
+    kop.className = "kindkop";
+    const naam = document.createElement("span");
+    naam.className = "naam";
+    naam.textContent = l.naam;
+    const groep = document.createElement("span");
+    groep.className = "groep" + (l.groep ? "" : " geengroep");
+    groep.textContent = l.groep ? "groep " + l.groep : "geen groep";
+    const deelKnop = document.createElement("button");
+    deelKnop.type = "button";
+    deelKnop.className = "deel";
+    deelKnop.textContent = navigator.share ? "Delen" : "Kopiëren";
+    deelKnop.onclick = () => {
+      const ta = wrap.querySelector("textarea");
+      const tekst = (ta.value || "").trim();
+      if (!tekst) { toast("Nog geen notitie om te delen"); return; }
+      const t = ontleedTijd(blok.tijd);
+      const datum = new Date(huidigeDatum + "T00:00:00");
+      const dagNaam = DAGNAMEN[datum.getDay()];
+      const context = t.start != null ? toonTijd(t.start) + "–" + toonTijd(t.eind) : blok.tijd;
+      deel(
+        l.naam + (l.groep ? " (groep " + l.groep + ")" : "") + " — " +
+        dagNaam + " " + kortDatum(datum) + ", " + context +
+        (blok.wat ? ", " + blok.wat : "") + "\n" + tekst + "\n\n— " + AFZENDER
+      );
+    };
+    kop.appendChild(naam);
+    kop.appendChild(groep);
+    kop.appendChild(deelKnop);
+
+    const ta = document.createElement("textarea");
+    ta.dataset.sleutel = l.id;
+    ta.placeholder = "Notitie voor de leerkracht van " + (l.groep ? "groep " + l.groep : l.naam);
+    ta.value = dagNotities[l.id] || "";
+
+    wrap.appendChild(kop);
+    wrap.appendChild(ta);
+    velden.appendChild(wrap);
+  }
+}
+
 function openSheet(id) {
   huidigId = id;
+  huidigeDatum = iso(datumVanActieveDag());
   const nieuw = id === null;
   bewerkVak.open = nieuw;
   document.getElementById("verwijderKnop").style.display = nieuw ? "none" : "";
 
+  const datum = datumVanActieveDag();
+  const dagNaam = DAGNAMEN[datum.getDay()];
+  const datumTekst = dagNaam.charAt(0).toUpperCase() + dagNaam.slice(1) + " " + kortDatum(datum);
+
+  leerlingRijen.innerHTML = "";
+
   if (nieuw) {
     document.getElementById("sheetTitel").textContent = "Nieuw blok";
     document.getElementById("sheetSub").textContent = "Wordt toegevoegd op " + actieveDag + ".";
-    veldNotitie.value = "";
     veldVan.value = ""; veldTot.value = ""; veldWie.value = ""; veldWat.value = "";
+    tekenNotitieVelden(null);
   } else {
     const { blok } = vindBlok(id);
     const t = ontleedTijd(blok.tijd);
     document.getElementById("sheetTitel").textContent = blok.wieWaar || "Blok";
     document.getElementById("sheetSub").textContent =
-      toonTijd(t.start) + " – " + toonTijd(t.eind) + (blok.wat ? " · " + blok.wat : "");
-    veldNotitie.value = notities[id] || "";
+      datumTekst + " · " + toonTijd(t.start) + "–" + toonTijd(t.eind) + (blok.wat ? " · " + blok.wat : "");
     veldVan.value = naarInput(t.start);
     veldTot.value = naarInput(t.eind);
     veldWie.value = blok.wieWaar || "";
     veldWat.value = blok.wat || "";
+    for (const l of blok.leerlingen) leerlingRijen.appendChild(leerlingRij(l.naam, l.groep));
+    tekenNotitieVelden(blok);
   }
   toon(sheet);
-  setTimeout(() => veldNotitie.focus({ preventScroll: true }), nieuw ? 400 : 320);
+  const eerste = velden.querySelector("textarea");
+  if (eerste && !nieuw) setTimeout(() => eerste.focus({ preventScroll: true }), 320);
 }
 
 function toon(welke) {
@@ -643,14 +1075,26 @@ function toon(welke) {
 }
 function sluit() {
   overlay.classList.remove("open");
-  sheet.classList.remove("open");
-  menuSheet.classList.remove("open");
+  for (const s of [sheet, overdrachtSheet, menuSheet, lkSheet]) s.classList.remove("open");
   document.body.style.overflow = "";
   if (document.activeElement) document.activeElement.blur();
 }
 
+function leesLeerlingRijen(bestaand) {
+  const uit = [];
+  let teller = 0;
+  for (const rij of leerlingRijen.querySelectorAll(".lrij")) {
+    const naam = rij.querySelector(".lnaam").value.trim();
+    const groep = rij.querySelector(".lgroep").value.trim();
+    if (!naam) continue;
+    const oud = bestaand[teller];
+    uit.push({ id: oud ? oud.id : "l" + Date.now() + "-" + teller, naam, groep });
+    teller++;
+  }
+  return uit;
+}
+
 function opslaan() {
-  const notitie = veldNotitie.value.trim();
   const van = vanInput(veldVan.value);
   const tot = vanInput(veldTot.value);
   const tijd = (van != null && tot != null) ? toonTijd(van) + " - " + toonTijd(tot) : null;
@@ -658,14 +1102,25 @@ function opslaan() {
   if (huidigId === null) {
     if (!tijd) { alert("Vul een begin- en eindtijd in."); return; }
     const id = "extra-" + Date.now();
-    rooster[actieveDag].push({ id, tijd, wieWaar: veldWie.value.trim() || "?", wat: veldWat.value.trim() });
-    if (notitie) notities[id] = notitie;
+    const blok = { id, tijd, wieWaar: veldWie.value.trim() || "?", wat: veldWat.value.trim(), leerlingen: [] };
+    blok.leerlingen = leesLeerlingRijen([]).map((l, i) => ({ id: id + "-l" + i, naam: l.naam, groep: l.groep }));
+    rooster[actieveDag].push(blok);
+    const ta = velden.querySelector("textarea");
+    if (ta) zetNotitie(huidigeDatum, id, ta.value);
   } else {
     const { blok } = vindBlok(huidigId);
+    for (const ta of velden.querySelectorAll("textarea")) zetNotitie(huidigeDatum, ta.dataset.sleutel, ta.value);
     if (tijd) blok.tijd = tijd;
     blok.wieWaar = veldWie.value.trim() || blok.wieWaar;
     blok.wat = veldWat.value.trim();
-    if (notitie) notities[huidigId] = notitie; else delete notities[huidigId];
+    const nieuweLeerlingen = leesLeerlingRijen(blok.leerlingen);
+    const behouden = new Set(nieuweLeerlingen.map(l => l.id));
+    for (const oud of blok.leerlingen) {
+      if (!behouden.has(oud.id)) {
+        for (const datum of Object.keys(notities)) zetNotitie(datum, oud.id, "");
+      }
+    }
+    blok.leerlingen = nieuweLeerlingen;
   }
   bewaarRooster();
   bewaarNotities();
@@ -677,15 +1132,18 @@ function verwijder() {
   if (huidigId === null) return;
   const gevonden = vindBlok(huidigId);
   if (!gevonden) return;
-  if (!confirm("Dit blok verwijderen?\n\n" + gevonden.blok.tijd + " — " + gevonden.blok.wieWaar)) return;
+  if (!confirm("Dit blok verwijderen?\n\n" + gevonden.blok.tijd + " — " + gevonden.blok.wieWaar +
+               "\n\nDe notities die erbij horen verdwijnen ook.")) return;
+  const sleutels = [gevonden.blok.id, ...gevonden.blok.leerlingen.map(l => l.id)];
+  for (const datum of Object.keys(notities)) for (const s of sleutels) zetNotitie(datum, s, "");
   rooster[gevonden.dag] = rooster[gevonden.dag].filter(b => b.id !== huidigId);
-  delete notities[huidigId];
   bewaarRooster();
   bewaarNotities();
   sluit();
   teken();
 }
 
+document.getElementById("leerlingToevoegen").onclick = () => leerlingRijen.appendChild(leerlingRij("", ""));
 document.getElementById("opslaanKnop").onclick = opslaan;
 document.getElementById("annuleerKnop").onclick = sluit;
 document.getElementById("verwijderKnop").onclick = verwijder;
@@ -693,37 +1151,83 @@ overlay.onclick = sluit;
 document.addEventListener("keydown", e => { if (e.key === "Escape") sluit(); });
 
 /* =========================================================
-   6. MENU
+   8. OVERDRACHT- EN MENUSCHERMEN
    ========================================================= */
+document.getElementById("overdrachtKnop").onclick = () => { weekOffset = 0; tekenOverdracht(); toon(overdrachtSheet); };
+document.getElementById("overdrachtSluit").onclick = sluit;
+document.getElementById("weekVorige").onclick = () => { weekOffset--; tekenOverdracht(); };
+document.getElementById("weekVolgende").onclick = () => { if (weekOffset < 0) { weekOffset++; tekenOverdracht(); } };
+
 document.getElementById("menuKnop").onclick = () => {
-  const aantal = Object.keys(notities).length;
+  let aantal = 0;
+  for (const datum of Object.keys(notities)) aantal += Object.keys(notities[datum]).length;
+  const dagen = Object.keys(notities).length;
   document.getElementById("menuStatus").textContent =
-    (isAangepast() ? "Rooster is aangepast" : "Origineel rooster") +
-    " · " + aantal + " notitie" + (aantal === 1 ? "" : "s");
+    (roosterAangepast() ? "Rooster is aangepast" : "Origineel rooster") +
+    " · " + aantal + " notitie" + (aantal === 1 ? "" : "s") +
+    " op " + dagen + " dag" + (dagen === 1 ? "" : "en");
   toon(menuSheet);
 };
 document.getElementById("menuSluit").onclick = sluit;
+
 document.getElementById("resetRooster").onclick = () => {
   if (!confirm("Het rooster terugzetten naar het origineel?\nJe notities blijven bewaard.")) return;
-  localStorage.removeItem(SLEUTEL_ROOSTER);
+  localStorage.removeItem(K_ROOSTER);
   rooster = maakBasis();
   sluit();
   teken();
 };
 document.getElementById("wisNotities").onclick = () => {
-  if (!confirm("Alle notities wissen?")) return;
+  if (!confirm("Alle notities wissen, ook die van eerdere weken?")) return;
   notities = {};
   bewaarNotities();
   sluit();
   teken();
 };
 
+document.getElementById("naarLeerkrachten").onclick = () => {
+  const groepen = new Set();
+  for (const d of DAGEN) for (const b of rooster[d.sleutel]) for (const l of b.leerlingen)
+    if ((l.groep || "").trim()) groepen.add(l.groep.trim());
+  const vak = document.getElementById("lkVelden");
+  vak.innerHTML = "";
+  const gesorteerd = [...groepen].sort();
+  if (!gesorteerd.length) {
+    const leeg = document.createElement("p");
+    leeg.className = "leeg";
+    leeg.textContent = "Nog geen groepen. Voeg leerlingen met een groep toe bij een blok.";
+    vak.appendChild(leeg);
+  }
+  for (const groep of gesorteerd) {
+    const veld = document.createElement("div");
+    veld.className = "veld";
+    const label = document.createElement("label");
+    label.textContent = "Groep " + groep;
+    const invoer = document.createElement("input");
+    invoer.type = "text";
+    invoer.placeholder = "Naam leerkracht";
+    invoer.value = leerkrachten[groep] || "";
+    invoer.oninput = () => {
+      const waarde = invoer.value.trim();
+      if (waarde) leerkrachten[groep] = waarde; else delete leerkrachten[groep];
+      bewaarLeerkrachten();
+    };
+    veld.appendChild(label);
+    veld.appendChild(invoer);
+    vak.appendChild(veld);
+  }
+  menuSheet.classList.remove("open");
+  toon(lkSheet);
+};
+document.getElementById("lkSluit").onclick = sluit;
+
 /* =========================================================
-   7. SWIPE tussen dagen
+   9. SWIPE tussen dagen
    ========================================================= */
 let startX = 0, startY = 0, volgen = false;
+const sheetOpen = () => [sheet, overdrachtSheet, menuSheet, lkSheet].some(s => s.classList.contains("open"));
 document.addEventListener("touchstart", e => {
-  if (sheet.classList.contains("open") || menuSheet.classList.contains("open")) return;
+  if (sheetOpen()) return;
   startX = e.touches[0].clientX; startY = e.touches[0].clientY; volgen = true;
 }, { passive: true });
 document.addEventListener("touchend", e => {
@@ -742,22 +1246,19 @@ document.addEventListener("touchend", e => {
 }, { passive: true });
 
 /* =========================================================
-   8. LEVEND HOUDEN
+   10. LEVEND HOUDEN
    ========================================================= */
 teken();
-setInterval(teken, 30000);
+setInterval(() => { if (!sheetOpen()) teken(); }, 30000);
 document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible") {
+  if (document.visibilityState === "visible" && !sheetOpen()) {
     const vandaag = huidigeDagSleutel();
-    if (vandaag && vandaag !== actieveDag && !sheet.classList.contains("open")) {
-      actieveDag = vandaag; eersteKeer = true;
-    }
+    if (vandaag && vandaag !== actieveDag) { actieveDag = vandaag; eersteKeer = true; }
     teken();
   }
 });
-window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", teken);
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { if (!sheetOpen()) teken(); });
 
-/* service worker voor offline gebruik */
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("sw.js").catch(() => {});

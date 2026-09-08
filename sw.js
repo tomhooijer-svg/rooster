@@ -1,7 +1,7 @@
 /* Service worker voor Rooster Tom.
    LET OP: verhoog VERSIE na elke wijziging in index.html,
    anders blijft de oude versie uit de cache komen. */
-const VERSIE = "rooster-tom-v1";
+const VERSIE = "rooster-tom-v2";
 const BESTANDEN = [
   "./",
   "./index.html",
